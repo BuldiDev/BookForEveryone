@@ -21,25 +21,81 @@ class BookRepository extends ServiceEntityRepository
 
     /**
      * Feed TikTok: libri filtrati per generi preferiti dell'utente.
+     * Ordine: prima libri con generi preferiti, poi tutti gli altri.
      */
-    public function getFeedForUser(User $user, int $page = 1, int $limit = 10): Paginator
+    public function getFeedForUser(User $user, int $page = 1, int $limit = 10, ?int $seed = null, array $excludeIds = []): array
     {
         $genres = $user->getPreferredGenres();
 
-        $qb = $this->createQueryBuilder('b')
-            ->leftJoin('b.genres', 'g')
-            ->leftJoin('b.photos', 'p');
-
-        if (!$genres->isEmpty()) {
-            $qb->where('g IN (:genres)')
-               ->setParameter('genres', $genres);
+        if ($seed === null) {
+            $seed = random_int(1, 999999);
         }
 
-        $qb->orderBy('b.createdAt', 'DESC')
-           ->setFirstResult(($page - 1) * $limit)
-           ->setMaxResults($limit);
+        $preferredBooks = [];
+        $otherBooks = [];
 
-        return new Paginator($qb->getQuery(), fetchJoinCollection: true);
+        // Se l'utente ha generi preferiti, separiamo i libri
+        if (!$genres->isEmpty()) {
+            // Libri con i generi preferiti
+            $qb1 = $this->createQueryBuilder('b')
+                ->leftJoin('b.genres', 'g')
+                ->leftJoin('b.photos', 'p')
+                ->where('g IN (:genres)')
+                ->setParameter('genres', $genres);
+            
+            if (!empty($excludeIds)) {
+                $qb1->andWhere('b.id NOT IN (:excludeIds)')
+                    ->setParameter('excludeIds', $excludeIds);
+            }
+            
+            $preferredBooks = $qb1->getQuery()->getResult();
+
+            // Ottieni gli ID dei libri preferiti per escluderli dalla seconda query
+            $preferredIds = array_map(fn($b) => $b->getId(), $preferredBooks);
+
+            // Tutti gli altri libri
+            $qb2 = $this->createQueryBuilder('b')
+                ->leftJoin('b.photos', 'p');
+            
+            $excludeAll = array_merge($preferredIds, $excludeIds);
+            if (!empty($excludeAll)) {
+                $qb2->where('b.id NOT IN (:excludeAll)')
+                    ->setParameter('excludeAll', $excludeAll);
+            }
+            
+            $otherBooks = $qb2->getQuery()->getResult();
+        } else {
+            // Se non ha generi preferiti, mostra tutti i libri
+            $qb = $this->createQueryBuilder('b')
+                ->leftJoin('b.photos', 'p');
+            
+            if (!empty($excludeIds)) {
+                $qb->where('b.id NOT IN (:excludeIds)')
+                    ->setParameter('excludeIds', $excludeIds);
+            }
+            
+            $otherBooks = $qb->getQuery()->getResult();
+        }
+
+        // Randomizza ogni gruppo separatamente con lo stesso seed
+        usort($preferredBooks, function($a, $b) use ($seed) {
+            $hashA = crc32($a->getId() . '-preferred-' . $seed);
+            $hashB = crc32($b->getId() . '-preferred-' . $seed);
+            return $hashA <=> $hashB;
+        });
+
+        usort($otherBooks, function($a, $b) use ($seed) {
+            $hashA = crc32($a->getId() . '-other-' . $seed);
+            $hashB = crc32($b->getId() . '-other-' . $seed);
+            return $hashA <=> $hashB;
+        });
+
+        // Unisci: prima i preferiti, poi gli altri
+        $allBooks = array_merge($preferredBooks, $otherBooks);
+
+        // Restituiamo la pagina richiesta
+        $offset = ($page - 1) * $limit;
+        return array_slice($allBooks, $offset, $limit);
     }
 
     /**

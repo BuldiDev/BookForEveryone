@@ -142,9 +142,34 @@ class PopulateBooksCommand extends Command
                     $book->setPublicationYear($firstPublishYear);
                     $book->setPageCount($pageCount);
 
-                    // Cover URL da Open Library
+                    // Download cover image from Open Library
                     if (isset($work['cover_id'])) {
-                        $book->setCoverUrl("https://covers.openlibrary.org/b/id/{$work['cover_id']}-L.jpg");
+                        try {
+                            $coverUrl = "https://covers.openlibrary.org/b/id/{$work['cover_id']}-L.jpg";
+                            $coverResponse = $this->httpClient->request('GET', $coverUrl, ['timeout' => 10]);
+                            
+                            if ($coverResponse->getStatusCode() === 200) {
+                                $imageContent = $coverResponse->getContent();
+                                
+                                // Create uploads directory if not exists
+                                $uploadsDir = __DIR__ . '/../../public/uploads/books';
+                                if (!is_dir($uploadsDir)) {
+                                    mkdir($uploadsDir, 0755, true);
+                                }
+                                
+                                // Generate unique filename
+                                $filename = 'book_' . uniqid() . '_' . $work['cover_id'] . '.jpg';
+                                $filepath = $uploadsDir . '/' . $filename;
+                                
+                                // Save image
+                                file_put_contents($filepath, $imageContent);
+                                
+                                // Set relative path for database
+                                $book->setCoverUrl('/uploads/books/' . $filename);
+                            }
+                        } catch (\Exception $e) {
+                            // Se download fallisce, ignora e continua senza copertina
+                        }
                     }
 
                     // Assegna a un utente casuale

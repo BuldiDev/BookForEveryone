@@ -149,7 +149,6 @@ ul, ol {
 .feed-area {
     display: flex;
     height: 100vh;
-    overflow: hidden;
 }
 
 /* Vecchio wrapper (mantenuto per retrocompat) */
@@ -221,27 +220,24 @@ ul, ol {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     position: relative;
-    overflow: hidden;
-}
-
-.feed-scroll {
-    height: 100vh;
     overflow-y: scroll;
-    scroll-snap-type: y mandatory;
-    -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
 
-.feed-scroll::-webkit-scrollbar {
+.feed-center::-webkit-scrollbar {
     display: none;
+}
+
+.feed-scroll {
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* --- Singolo item del feed --- */
 .feed-item {
-    height: 100vh;
-    scroll-snap-align: start;
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;

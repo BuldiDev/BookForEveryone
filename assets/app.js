@@ -134,26 +134,27 @@ document.addEventListener('click', (e) => {
     .catch(err => console.error('Follow error:', err));
 });
 
-// Feed: frecce navigazione su/giù
+// Feed: frecce navigazione su/giù e scroll infinito
 document.addEventListener('DOMContentLoaded', () => {
     const feed = document.getElementById('feed');
+    const feedCenter = document.querySelector('.feed-center');
     const prevBtn = document.getElementById('feed-prev');
     const nextBtn = document.getElementById('feed-next');
 
-    if (feed && prevBtn && nextBtn) {
+    if (feed && feedCenter && prevBtn && nextBtn) {
         const scrollToItem = (direction) => {
             const items = feed.querySelectorAll('.feed-item');
             if (!items.length) return;
 
-            const feedRect = feed.getBoundingClientRect();
-            const feedCenter = feedRect.top + feedRect.height / 2;
+            const feedRect = feedCenter.getBoundingClientRect();
+            const feedCenterY = feedRect.top + feedRect.height / 2;
             let currentIndex = 0;
 
             // Find which item is currently most visible
             items.forEach((item, i) => {
                 const itemRect = item.getBoundingClientRect();
                 const itemCenter = itemRect.top + itemRect.height / 2;
-                if (Math.abs(itemCenter - feedCenter) < Math.abs(items[currentIndex].getBoundingClientRect().top + items[currentIndex].getBoundingClientRect().height / 2 - feedCenter)) {
+                if (Math.abs(itemCenter - feedCenterY) < Math.abs(items[currentIndex].getBoundingClientRect().top + items[currentIndex].getBoundingClientRect().height / 2 - feedCenterY)) {
                     currentIndex = i;
                 }
             });
@@ -167,6 +168,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
         nextBtn.addEventListener('click', () => scrollToItem('next'));
         prevBtn.addEventListener('click', () => scrollToItem('prev'));
+
+        // Scroll infinito
+        let currentPage = 1;
+        let isLoading = false;
+        let hasMore = true;
+
+        feedCenter.addEventListener('scroll', () => {
+            if (isLoading || !hasMore) return;
+
+            const items = feed.querySelectorAll('.feed-item');
+            const totalItems = items.length;
+            
+            // Trova quale libro è attualmente visibile
+            const feedRect = feedCenter.getBoundingClientRect();
+            const feedCenterY = feedRect.top + feedRect.height / 2;
+            
+            let currentVisibleIndex = 0;
+            items.forEach((item, i) => {
+                const itemRect = item.getBoundingClientRect();
+                const itemCenter = itemRect.top + itemRect.height / 2;
+                if (itemCenter > feedCenterY - 200 && itemCenter < feedCenterY + 200) {
+                    currentVisibleIndex = i;
+                }
+            });
+            
+            // Carica quando mancano 15 libri alla fine
+            const remainingItems = totalItems - currentVisibleIndex;
+            if (remainingItems <= 15) {
+                loadMoreBooks();
+            }
+        });
+
+        async function loadMoreBooks() {
+            if (isLoading || !hasMore) return;
+            
+            isLoading = true;
+            currentPage++;
+
+            try {
+                const response = await fetch(`/feed/load-more?page=${currentPage}`);
+                const data = await response.json();
+
+                if (data.html) {
+                    feed.insertAdjacentHTML('beforeend', data.html);
+                }
+
+                hasMore = data.hasMore;
+                isLoading = false;
+            } catch (error) {
+                console.error('Error loading more books:', error);
+                isLoading = false;
+            }
+        }
     }
 });
 

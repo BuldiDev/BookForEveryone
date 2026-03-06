@@ -1,0 +1,5 @@
+{% for book in books %}
+    <div class="feed-item" data-book-id="{{ book.id }}">
+        {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null} %}
+    </div>
+{% endfor %}
