@@ -27,14 +27,14 @@
             <span class="profile-stat__count">{{ user.ownedBooks|length }}</span>
             <span class="profile-stat__label">Posseduti</span>
         </div>
-        <div class="profile-stat">
+        <a href="{{ path('app_profile_followers', {username: user.username}) }}" class="profile-stat profile-stat--link">
             <span class="profile-stat__count">{{ user.followersCount }}</span>
             <span class="profile-stat__label">Follower</span>
-        </div>
-        <div class="profile-stat">
+        </a>
+        <a href="{{ path('app_profile_following', {username: user.username}) }}" class="profile-stat profile-stat--link">
             <span class="profile-stat__count">{{ user.followingCount }}</span>
             <span class="profile-stat__label">Seguiti</span>
-        </div>
+        </a>
     </div>
 
     {% if app.user and app.user != user %}
@@ -49,9 +49,38 @@
     {% endif %}
 </div>
 
-<div class="book-list">
-    {% for userBook in readBooks %}
-        {% include 'components/book_card.html.twig' with {'book': userBook.book} %}
-    {% endfor %}
+<div class="container" style="padding-top: var(--spacing-lg); padding-bottom: 80px;">
+    <h2 style="font-size: var(--font-xl); font-weight: 700; margin-bottom: var(--spacing-md);">Libri consigliati</h2>
+    {% if recommendedBooks|length > 0 %}
+        <div class="book-list">
+            {% for book in recommendedBooks %}
+                {% include 'components/book_card.html.twig' with {'book': book} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">Nessun libro consigliato ancora.</p>
+    {% endif %}
+
+    <h2 style="font-size: var(--font-xl); font-weight: 700; margin-top: var(--spacing-2xl); margin-bottom: var(--spacing-md);">Libri letti</h2>
+    {% if readBooks|length > 0 %}
+        <div class="book-list">
+            {% for userBook in readBooks %}
+                {% include 'components/book_card.html.twig' with {'book': userBook.book} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">Nessun libro letto ancora.</p>
+    {% endif %}
+
+    <h2 style="font-size: var(--font-xl); font-weight: 700; margin-top: var(--spacing-2xl); margin-bottom: var(--spacing-md);">Libri posseduti</h2>
+    {% if ownedBooks|length > 0 %}
+        <div class="book-list">
+            {% for userBook in ownedBooks %}
+                {% include 'components/book_card.html.twig' with {'book': userBook.book} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">Nessun libro posseduto ancora.</p>
+    {% endif %}
 </div>
 {% endblock %}

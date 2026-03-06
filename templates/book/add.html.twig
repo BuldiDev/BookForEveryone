@@ -7,55 +7,99 @@
     <h1 style="font-size: var(--font-2xl); font-weight: 700; margin-bottom: var(--spacing-lg);">Aggiungi un libro</h1>
 
     {{ form_start(form) }}
-        <div class="form-group">
-            {{ form_label(form.title, 'Titolo') }}
-            {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Es. Il nome della rosa'}}) }}
-            {{ form_errors(form.title) }}
+        {# Step 1: ISBN Lookup #}
+        <div id="isbn-lookup-section">
+            <div class="form-group">
+                {{ form_label(form.isbn, 'ISBN') }}
+                <div style="display: flex; gap: var(--spacing-sm);">
+                    {{ form_widget(form.isbn, {'attr': {'class': 'form-control', 'placeholder': '978-88-...'}}) }}
+                    <button type="button" id="isbn-search-btn" class="btn btn--primary" style="white-space: nowrap;">Cerca</button>
+                </div>
+                <p class="text-muted" style="font-size: 0.75rem; margin-top: 4px;">Inserisci l'ISBN per cercare automaticamente le informazioni del libro</p>
+                {{ form_errors(form.isbn) }}
+                <div id="isbn-error" style="color: var(--color-danger); font-size: var(--font-sm); margin-top: 4px; display: none;"></div>
+                <div id="isbn-loading" style="color: var(--color-primary); font-size: var(--font-sm); margin-top: 4px; display: none;">Ricerca in corso...</div>
+            </div>
         </div>
 
-        <div class="form-group">
-            {{ form_label(form.bookAuthor, 'Autore') }}
-            {{ form_widget(form.bookAuthor, {'attr': {'class': 'form-control', 'placeholder': 'Es. Umberto Eco'}}) }}
-            {{ form_errors(form.bookAuthor) }}
-        </div>
+        {# Step 2: Book Details (hidden initially) #}
+        <div id="book-details-section" style="display: none;">
+            <p style="color: var(--color-success); margin-bottom: var(--spacing-lg);">✓ Dati trovati! Aggiungi generi e immagini.</p>
+            
+            <div class="form-group">
+                {{ form_label(form.title, 'Titolo') }}
+                {{ form_widget(form.title, {'attr': {'class': 'form-control', 'readonly': 'readonly', 'style': 'background-color: #2a2a2a; cursor: not-allowed;'}}) }}
+                {{ form_errors(form.title) }}
+            </div>
 
-        <div class="form-group">
-            {{ form_label(form.description, 'Descrizione') }}
-            {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 4, 'placeholder': 'Di cosa parla questo libro?'}}) }}
-            {{ form_errors(form.description) }}
-        </div>
+            <div class="form-group">
+                {{ form_label(form.bookAuthor, 'Autore') }}
+                {{ form_widget(form.bookAuthor, {'attr': {'class': 'form-control', 'readonly': 'readonly', 'style': 'background-color: #2a2a2a; cursor: not-allowed;'}}) }}
+                {{ form_errors(form.bookAuthor) }}
+            </div>
 
-        <div class="form-group">
-            {{ form_label(form.isbn, 'ISBN (opzionale)') }}
-            {{ form_widget(form.isbn, {'attr': {'class': 'form-control', 'placeholder': '978-...'}}) }}
-            {{ form_errors(form.isbn) }}
-        </div>
+            <div class="form-group">
+                {{ form_label(form.description, 'Descrizione') }}
+                {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 4, 'readonly': 'readonly', 'style': 'background-color: #2a2a2a; cursor: not-allowed;'}}) }}
+                {{ form_errors(form.description) }}
+            </div>
 
-        <div class="form-group">
-            {{ form_label(form.genres, 'Generi') }}
-            {{ form_widget(form.genres, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.genres) }}
-        </div>
+            <div class="form-group">
+                {{ form_label(form.pageCount, 'Numero di pagine') }}
+                {{ form_widget(form.pageCount, {'attr': {'class': 'form-control', 'readonly': 'readonly', 'style': 'background-color: #2a2a2a; cursor: not-allowed;'}}) }}
+                {{ form_errors(form.pageCount) }}
+            </div>
 
-        <div class="form-group">
-            {{ form_label(form.pageCount, 'Numero di pagine (opzionale)') }}
-            {{ form_widget(form.pageCount, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.pageCount) }}
-        </div>
+            <div class="form-group">
+                {{ form_label(form.publisher, 'Editore') }}
+                {{ form_widget(form.publisher, {'attr': {'class': 'form-control', 'readonly': 'readonly', 'style': 'background-color: #2a2a2a; cursor: not-allowed;'}}) }}
+                {{ form_errors(form.publisher) }}
+            </div>
 
-        <div class="form-group">
-            {{ form_label(form.publisher, 'Editore (opzionale)') }}
-            {{ form_widget(form.publisher, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.publisher) }}
-        </div>
+            <div class="form-group">
+                {{ form_label(form.publicationYear, 'Anno di pubblicazione') }}
+                {{ form_widget(form.publicationYear, {'attr': {'class': 'form-control', 'readonly': 'readonly', 'style': 'background-color: #2a2a2a; cursor: not-allowed;'}}) }}
+                {{ form_errors(form.publicationYear) }}
+            </div>
 
-        <div class="form-group">
-            {{ form_label(form.publicationYear, 'Anno di pubblicazione (opzionale)') }}
-            {{ form_widget(form.publicationYear, {'attr': {'class': 'form-control'}}) }}
-            {{ form_errors(form.publicationYear) }}
-        </div>
+            <hr style="border-color: var(--color-border); margin: var(--spacing-lg) 0;">
 
-        <button type="submit" class="btn btn--accent btn--block mt-md">Pubblica</button>
+            <div class="form-group">
+                {{ form_label(form.genres, 'Generi') }}
+                
+                {# Custom genre selector #}
+                <div class="genre-selector">
+                    <input type="text" id="genre-search" class="form-control" placeholder="Cerca un genere..." autocomplete="off">
+                    <div id="genre-suggestions" class="genre-suggestions" style="display: none;"></div>
+                    <div id="selected-genres" class="selected-genres"></div>
+                </div>
+                
+                {# Hidden original select #}
+                {{ form_widget(form.genres) }}
+                
+                <p class="text-muted" style="font-size: 0.75rem; margin-top: 4px;">Cerca e seleziona i generi</p>
+                {{ form_errors(form.genres) }}
+            </div>
+
+            <hr style="border-color: var(--color-border); margin: var(--spacing-lg) 0;">
+            <h2 style="font-size: var(--font-lg); font-weight: 600; margin-bottom: var(--spacing-md);">Immagini</h2>
+
+            <div class="form-group">
+                {{ form_label(form.coverFile, 'Copertina ufficiale') }}
+                {{ form_widget(form.coverFile, {'attr': {'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'}}) }}
+                <p class="text-muted" style="font-size: 0.75rem; margin-top: 4px;">La copertina originale del libro (JPG, PNG, WebP - max 5MB)</p>
+                {{ form_errors(form.coverFile) }}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(form.userPhotos, 'Le tue foto del libro') }}
+                {{ form_widget(form.userPhotos, {'attr': {'class': 'form-control'}}) }}
+                <p class="text-muted" style="font-size: 0.75rem; margin-top: 4px;">Foto personali: il libro sulla tua scrivania, la tua copia, ecc. Puoi caricare più foto.</p>
+                {{ form_errors(form.userPhotos) }}
+            </div>
+
+            <button type="submit" class="btn btn--accent btn--block mt-md">Pubblica</button>
+        </div>
     {{ form_end(form) }}
 </div>
 {% endblock %}

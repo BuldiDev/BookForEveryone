@@ -292,6 +292,12 @@ ul, ol {
     color: #fff;
 }
 
+.feed-card__recommender {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 4px;
+}
+
 .feed-card__title {
     font-size: var(--font-lg);
     font-weight: 700;
@@ -389,6 +395,94 @@ ul, ol {
 
 .feed-action--read .feed-action__icon {
     background: rgba(16, 185, 129, 0.2);
+}
+
+.feed-action--own {
+    color: var(--color-success);
+}
+
+.feed-action--own .feed-action__icon {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+/* Profile picture with follow button */
+.feed-action--profile {
+    position: relative;
+    cursor: default;
+}
+
+.feed-profile-pic {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.feed-profile-pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.feed-profile-pic-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: white;
+}
+
+.feed-follow-btn {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    border: 2px solid var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    line-height: 1;
+    padding: 0;
+}
+
+.feed-follow-btn:hover {
+    background: var(--color-primary-light);
+    transform: scale(1.1);
+}
+
+.feed-follow-btn--following {
+    background: var(--color-success);
+}
+
+.feed-follow-btn--following:hover {
+    background: #059669;
+}
+
+.feed-card__recommender-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s;
+}
+
+.feed-card__recommender-link:hover {
+    color: var(--color-primary-light);
+    text-decoration: underline;
 }
 
 /* --- Frecce navigazione (colonna far-right) --- */
@@ -538,6 +632,14 @@ ul, ol {
     .feed-action--read .feed-action__icon {
         background: rgba(5, 150, 105, 0.3);
     }
+
+    .feed-action--own {
+        color: var(--color-success);
+    }
+
+    .feed-action--own .feed-action__icon {
+        background: rgba(5, 150, 105, 0.3);
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -677,6 +779,82 @@ ul, ol {
     font-size: var(--font-sm);
     color: var(--color-danger);
     margin-top: var(--spacing-xs);
+}
+
+/* Genre Selector */
+.genre-selector {
+    position: relative;
+}
+
+.genre-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    margin-top: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.genre-suggestion-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    font-size: var(--font-sm);
+}
+
+.genre-suggestion-item:hover {
+    background-color: rgba(74, 158, 255, 0.15);
+}
+
+.selected-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    min-height: 36px;
+}
+
+.genre-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 20px;
+    font-size: var(--font-sm);
+    font-weight: 500;
+}
+
+.genre-tag-remove {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.15s;
+}
+
+.genre-tag-remove:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.hidden-genre-select {
+    display: none !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -851,6 +1029,17 @@ ul, ol {
     text-align: center;
 }
 
+.profile-stat--link {
+    cursor: pointer;
+    transition: opacity 0.2s;
+    text-decoration: none;
+    color: inherit;
+}
+
+.profile-stat--link:hover {
+    opacity: 0.7;
+}
+
 .profile-stat__count {
     font-size: var(--font-xl);
     font-weight: 700;
@@ -859,6 +1048,80 @@ ul, ol {
 .profile-stat__label {
     font-size: var(--font-sm);
     color: var(--color-text-muted);
+}
+
+/* User List */
+.user-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.user-list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    transition: background-color 0.2s;
+}
+
+.user-list-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.user-list-item__link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex: 1;
+    text-decoration: none;
+    color: inherit;
+}
+
+.user-list-item__avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.user-list-item__avatar--placeholder {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-xl);
+    font-weight: 700;
+    color: white;
+}
+
+.user-list-item__info {
+    flex: 1;
+}
+
+.user-list-item__name {
+    font-size: var(--font-base);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.user-list-item__username {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+}
+
+.user-list-item__bio {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.user-follow-btn {
+    flex-shrink: 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -904,6 +1167,41 @@ ul, ol {
 }
 
 .book-card__author {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   11b. FOTO UTENTI (galleria nella pagina libro)
+   -------------------------------------------------------------------------- */
+
+.user-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.user-photo-card {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+}
+
+.user-photo-card__img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
+
+.user-photo-card__caption {
+    padding: var(--spacing-sm) var(--spacing-sm) 0;
+    font-size: var(--font-sm);
+    color: var(--color-text);
+}
+
+.user-photo-card__user {
+    padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
     font-size: 0.75rem;
     color: var(--color-text-muted);
 }

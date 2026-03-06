@@ -12,6 +12,7 @@
 
     {# Overlay info in basso #}
     <div class="feed-card__overlay">
+        <p class="feed-card__recommender">Consigliato da <a href="{{ path('app_profile', {username: book.addedBy.username}) }}" class="feed-card__recommender-link">@{{ book.addedBy.username }}</a></p>
         <h2 class="feed-card__title">{{ book.title }}</h2>
         <p class="feed-card__author">{{ book.bookAuthor }}</p>
         {% if book.averageRating %}
@@ -27,10 +28,14 @@
     {# Pannello descrizione completa #}
     <div class="feed-card__description-panel" id="desc-{{ book.id }}">
         <button class="description-close" data-close-desc="{{ book.id }}">X</button>
+        <p style="font-size: var(--font-sm); color: rgba(255,255,255,0.5); margin-bottom: var(--spacing-sm);">Consigliato da <a href="{{ path('app_profile', {username: book.addedBy.username}) }}" style="color: var(--color-primary); text-decoration: none;">@{{ book.addedBy.username }}</a></p>
         <h2>{{ book.title }}</h2>
         <p class="text-muted mb-md" style="color: rgba(255,255,255,0.6);">{{ book.bookAuthor }}{% if book.publicationYear %} - {{ book.publicationYear }}{% endif %}</p>
+        {% if book.isbn %}
+            <p style="color: rgba(255,255,255,0.5); font-size: var(--font-sm);">ISBN: {{ book.isbn }}</p>
+        {% endif %}
         {% if book.description %}
-            <p>{{ book.description }}</p>
+            <p class="mt-md">{{ book.description }}</p>
         {% endif %}
         {% if book.pageCount %}
             <p class="mt-md" style="color: rgba(255,255,255,0.6);">{{ book.pageCount }} pagine</p>
@@ -48,6 +53,30 @@
 
 {# Azioni a destra della card #}
 <div class="feed-actions">
+    {# Profile picture with follow button #}
+    <div class="feed-action feed-action--profile">
+        <a href="{{ path('app_profile', {username: book.addedBy.username}) }}" class="feed-profile-pic">
+            {% if book.addedBy.avatarUrl %}
+                <img src="{{ book.addedBy.avatarUrl }}" alt="{{ book.addedBy.displayName }}">
+            {% else %}
+                <div class="feed-profile-pic-placeholder">{{ book.addedBy.displayName|first|upper }}</div>
+            {% endif %}
+        </a>
+        {% if app.user and app.user != book.addedBy %}
+            <button type="button" 
+                    class="feed-follow-btn {% if app.user.isFollowing(book.addedBy) %}feed-follow-btn--following{% endif %}"
+                    data-action="follow"
+                    data-user-id="{{ book.addedBy.id }}"
+                    data-csrf="{{ csrf_token('follow' ~ book.addedBy.id) }}">
+                {% if app.user.isFollowing(book.addedBy) %}
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                {% else %}
+                    +
+                {% endif %}
+            </button>
+        {% endif %}
+    </div>
+
     <button class="feed-action {% if user_book and user_book.liked %}feed-action--liked{% endif %}"
             data-action="like" data-book="{{ book.id }}">
         <span class="feed-action__icon">
@@ -64,7 +93,7 @@
         <span class="feed-action__label">Letto</span>
     </button>
 
-    <button class="feed-action"
+    <button class="feed-action {% if user_book and user_book.ownsPhysically %}feed-action--own{% endif %}"
             data-action="own" data-book="{{ book.id }}">
         <span class="feed-action__icon">
             <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h5v16z"/></svg>

@@ -34,15 +34,20 @@ class BookFormType extends AbstractType
             ])
             ->add('isbn', TextType::class, [
                 'label' => 'ISBN',
-                'required' => false,
+                'required' => true,
+                'constraints' => [new NotBlank(message: 'Inserisci l\'ISBN del libro')],
             ])
             ->add('genres', EntityType::class, [
                 'class' => Genre::class,
                 'choice_label' => 'name',
                 'multiple' => true,
-                'expanded' => true,
+                'expanded' => false,
                 'label' => 'Generi',
                 'required' => false,
+                'attr' => [
+                    'class' => 'hidden-genre-select',
+                    'style' => 'display: none;',
+                ],
             ])
             ->add('pageCount', IntegerType::class, [
                 'label' => 'Pagine',
@@ -57,7 +62,7 @@ class BookFormType extends AbstractType
                 'required' => false,
             ])
             ->add('coverFile', FileType::class, [
-                'label' => 'Copertina',
+                'label' => 'Copertina ufficiale',
                 'mapped' => false,
                 'required' => false,
                 'constraints' => [
@@ -66,6 +71,18 @@ class BookFormType extends AbstractType
                         mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
                         mimeTypesMessage: 'Carica un\'immagine valida (JPG, PNG, WebP)',
                     ),
+                ],
+            ])
+            ->add('userPhotos', FileType::class, [
+                'label' => 'Le tue foto del libro',
+                'mapped' => false,
+                'required' => false,
+                'multiple' => true,
+                'constraints' => [
+                ],
+                'attr' => [
+                    'accept' => 'image/jpeg,image/png,image/webp',
+                    'multiple' => 'multiple',
                 ],
             ]);
     }

@@ -1,0 +1,57 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Follower di {{ user.displayName }} - BookForEveryone{% endblock %}
+
+{% block page_content %}
+<div class="container" style="padding-top: var(--spacing-xl); padding-bottom: 80px;">
+    <div style="margin-bottom: var(--spacing-lg);">
+        <a href="{{ path('app_profile', {username: user.username}) }}" style="color: var(--color-primary); text-decoration: none; font-size: var(--font-sm);">
+            ← Torna al profilo
+        </a>
+    </div>
+
+    <h1 style="font-size: var(--font-2xl); font-weight: 700; margin-bottom: var(--spacing-md);">
+        Follower di @{{ user.username }}
+    </h1>
+
+    {% if followers|length > 0 %}
+        <div class="user-list">
+            {% for follower in followers %}
+                <div class="user-list-item">
+                    <a href="{{ path('app_profile', {username: follower.username}) }}" class="user-list-item__link">
+                        {% if follower.avatarUrl %}
+                            <img src="{{ follower.avatarUrl }}" alt="{{ follower.displayName }}" class="user-list-item__avatar">
+                        {% else %}
+                            <div class="user-list-item__avatar user-list-item__avatar--placeholder">
+                                {{ follower.displayName|first|upper }}
+                            </div>
+                        {% endif %}
+                        <div class="user-list-item__info">
+                            <div class="user-list-item__name">{{ follower.displayName }}</div>
+                            <div class="user-list-item__username">@{{ follower.username }}</div>
+                            {% if follower.bio %}
+                                <div class="user-list-item__bio">{{ follower.bio }}</div>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% if app.user and app.user != follower %}
+                        <button type="button" 
+                                class="btn btn--sm {% if app.user.isFollowing(follower) %}btn--outline{% else %}btn--primary{% endif %} user-follow-btn"
+                                data-action="follow"
+                                data-user-id="{{ follower.id }}"
+                                data-csrf="{{ csrf_token('follow' ~ follower.id) }}">
+                            {% if app.user.isFollowing(follower) %}
+                                Segui già
+                            {% else %}
+                                Segui
+                            {% endif %}
+                        </button>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">Nessun follower ancora.</p>
+    {% endif %}
+</div>
+{% endblock %}

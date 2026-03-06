@@ -2,10 +2,13 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
+use App\Repository\BookRepository;
 use App\Repository\UserBookRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -17,6 +20,7 @@ class ProfileController extends AbstractController
         string $username,
         UserRepository $userRepo,
         UserBookRepository $userBookRepo,
+        BookRepository $bookRepo,
     ): Response {
         $user = $userRepo->findByUsername($username);
 
@@ -27,6 +31,42 @@ class ProfileController extends AbstractController
         return $this->render('profile/show.html.twig', [
             'user' => $user,
             'readBooks' => $userBookRepo->findReadByUser($user),
+            'ownedBooks' => $userBookRepo->findOwnedByUser($user),
+            'recommendedBooks' => $bookRepo->findBy(['addedBy' => $user], ['createdAt' => 'DESC']),
+        ]);
+    }
+
+    #[Route('/profile/{username}/followers', name: 'app_profile_followers')]
+    public function followers(
+        string $username,
+        UserRepository $userRepo,
+    ): Response {
+        $user = $userRepo->findByUsername($username);
+
+        if (!$user) {
+            throw $this->createNotFoundException('Utente non trovato');
+        }
+
+        return $this->render('profile/followers.html.twig', [
+            'user' => $user,
+            'followers' => $user->getFollowers(),
+        ]);
+    }
+
+    #[Route('/profile/{username}/following', name: 'app_profile_following')]
+    public function following(
+        string $username,
+        UserRepository $userRepo,
+    ): Response {
+        $user = $userRepo->findByUsername($username);
+
+        if (!$user) {
+            throw $this->createNotFoundException('Utente non trovato');
+        }
+
+        return $this->render('profile/following.html.twig', [
+            'user' => $user,
+            'following' => $user->getFollowing(),
         ]);
     }
 
@@ -45,18 +85,31 @@ class ProfileController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('follow' . $id, $request->request->get('_token'))) {
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse(['error' => 'Invalid CSRF token'], 400);
+            }
             return $this->redirectToRoute('app_profile', ['username' => $targetUser->getUsername()]);
         }
 
+        /** @var User $currentUser */
         $currentUser = $this->getUser();
 
-        if ($currentUser->isFollowing($targetUser)) {
+        $isFollowing = $currentUser->isFollowing($targetUser);
+        
+        if ($isFollowing) {
             $currentUser->unfollow($targetUser);
         } else {
             $currentUser->follow($targetUser);
         }
 
         $em->flush();
+
+        // Return JSON for AJAX requests
+        if ($request->isXmlHttpRequest()) {
+            return new JsonResponse([
+                'following' => !$isFollowing,
+            ]);
+        }
 
         return $this->redirectToRoute('app_profile', ['username' => $targetUser->getUsername()]);
     }

@@ -4,6 +4,25 @@
 
 {% block page_content %}
 <div class="container" style="padding-top: var(--spacing-xl); padding-bottom: 80px;">
+    {# Chi ha consigliato il libro #}
+    <div class="mb-md" style="display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md); background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+        <div style="flex: 1;">
+            <p style="font-size: var(--font-sm); color: var(--color-text-muted); margin-bottom: 4px;">Consigliato da</p>
+            <p style="font-weight: 600;">{{ book.addedBy.displayName }}</p>
+            <p style="font-size: var(--font-sm); color: var(--color-text-muted);">@{{ book.addedBy.username }}</p>
+        </div>
+        {% if app.user and app.user != book.addedBy %}
+            <form method="post" action="{{ path('app_follow_toggle', {id: book.addedBy.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('follow' ~ book.addedBy.id) }}">
+                {% if app.user.isFollowing(book.addedBy) %}
+                    <button type="submit" class="btn btn--outline btn--sm">Seguendo</button>
+                {% else %}
+                    <button type="submit" class="btn btn--primary btn--sm">Segui</button>
+                {% endif %}
+            </form>
+        {% endif %}
+    </div>
+
     <div class="flex gap-sm mb-lg" style="gap: var(--spacing-lg);">
         {% if book.coverUrl %}
             <img src="{{ book.coverUrl }}" alt="{{ book.title }}" style="width: 140px; border-radius: var(--radius-md); aspect-ratio: 2/3; object-fit: cover;">
@@ -11,6 +30,9 @@
         <div>
             <h1 style="font-size: var(--font-2xl); font-weight: 700;">{{ book.title }}</h1>
             <p class="text-muted">{{ book.bookAuthor }}</p>
+            {% if book.isbn %}
+                <p class="text-muted mt-sm" style="font-size: var(--font-sm);">ISBN: {{ book.isbn }}</p>
+            {% endif %}
             {% if book.averageRating %}
                 <p class="mt-sm" style="color: var(--color-star);">{{ book.averageRating }}/5 ({{ book.reviewsCount }})</p>
             {% endif %}
@@ -32,6 +54,24 @@
             {% for genre in book.genres %}
                 <span style="padding: 4px 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-full); font-size: var(--font-sm);">{{ genre.name }}</span>
             {% endfor %}
+        </div>
+    {% endif %}
+
+    {# Foto degli utenti #}
+    {% if book.photos|length > 0 %}
+        <div class="mb-lg">
+            <h2 style="font-size: var(--font-lg); font-weight: 600; margin-bottom: var(--spacing-sm);">Foto degli utenti</h2>
+            <div class="user-photos-grid">
+                {% for photo in book.photos %}
+                    <div class="user-photo-card">
+                        <img src="{{ photo.imageUrl }}" alt="{{ photo.caption ?? book.title }}" class="user-photo-card__img">
+                        {% if photo.caption %}
+                            <p class="user-photo-card__caption">{{ photo.caption }}</p>
+                        {% endif %}
+                        <p class="user-photo-card__user">Aggiunta da {{ photo.uploadedBy.displayName }}</p>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     {% endif %}
 
