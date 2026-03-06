@@ -1,0 +1,61 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Aggiungi libro - BookForEveryone{% endblock %}
+
+{% block body %}
+<div class="container" style="padding-top: var(--spacing-xl); padding-bottom: 80px;">
+    <h1 style="font-size: var(--font-2xl); font-weight: 700; margin-bottom: var(--spacing-lg);">Aggiungi un libro</h1>
+
+    {{ form_start(form) }}
+        <div class="form-group">
+            {{ form_label(form.title, 'Titolo') }}
+            {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Es. Il nome della rosa'}}) }}
+            {{ form_errors(form.title) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.bookAuthor, 'Autore') }}
+            {{ form_widget(form.bookAuthor, {'attr': {'class': 'form-control', 'placeholder': 'Es. Umberto Eco'}}) }}
+            {{ form_errors(form.bookAuthor) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.description, 'Descrizione') }}
+            {{ form_widget(form.description, {'attr': {'class': 'form-control', 'rows': 4, 'placeholder': 'Di cosa parla questo libro?'}}) }}
+            {{ form_errors(form.description) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.isbn, 'ISBN (opzionale)') }}
+            {{ form_widget(form.isbn, {'attr': {'class': 'form-control', 'placeholder': '978-...'}}) }}
+            {{ form_errors(form.isbn) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.genres, 'Generi') }}
+            {{ form_widget(form.genres, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.genres) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.pageCount, 'Numero di pagine (opzionale)') }}
+            {{ form_widget(form.pageCount, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.pageCount) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.publisher, 'Editore (opzionale)') }}
+            {{ form_widget(form.publisher, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.publisher) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.publicationYear, 'Anno di pubblicazione (opzionale)') }}
+            {{ form_widget(form.publicationYear, {'attr': {'class': 'form-control'}}) }}
+            {{ form_errors(form.publicationYear) }}
+        </div>
+
+        <button type="submit" class="btn btn--accent btn--block mt-md">Pubblica</button>
+    {{ form_end(form) }}
+</div>
+{% endblock %}

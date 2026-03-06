@@ -1,0 +1,37 @@
+{% extends 'layout/auth.html.twig' %}
+
+{% block title %}Registrati - BookForEveryone{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+    <div class="auth-card">
+        <h1 class="auth-card__title">Registrati</h1>
+
+        {{ form_start(registrationForm) }}
+            <div class="form-group">
+                {{ form_label(registrationForm.username) }}
+                {{ form_widget(registrationForm.username, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(registrationForm.username) }}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(registrationForm.email) }}
+                {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(registrationForm.email) }}
+            </div>
+
+            <div class="form-group">
+                {{ form_label(registrationForm.plainPassword, 'Password') }}
+                {{ form_widget(registrationForm.plainPassword, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(registrationForm.plainPassword) }}
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--block mt-md">Registrati</button>
+        {{ form_end(registrationForm) }}
+
+        <p class="text-center mt-md text-muted">
+            Hai già un account? <a href="{{ path('app_login') }}" style="color: var(--color-accent); font-weight: 600;">Accedi</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

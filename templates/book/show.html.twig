@@ -1,0 +1,55 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ book.title }} - BookForEveryone{% endblock %}
+
+{% block body %}
+<div class="container" style="padding-top: var(--spacing-xl); padding-bottom: 80px;">
+    <div class="flex gap-sm mb-lg" style="gap: var(--spacing-lg);">
+        {% if book.coverUrl %}
+            <img src="{{ book.coverUrl }}" alt="{{ book.title }}" style="width: 140px; border-radius: var(--radius-md); aspect-ratio: 2/3; object-fit: cover;">
+        {% endif %}
+        <div>
+            <h1 style="font-size: var(--font-2xl); font-weight: 700;">{{ book.title }}</h1>
+            <p class="text-muted">{{ book.bookAuthor }}</p>
+            {% if book.averageRating %}
+                <p class="mt-sm" style="color: var(--color-star);">{{ book.averageRating }}/5 ({{ book.reviewsCount }})</p>
+            {% endif %}
+            {% if book.pageCount %}
+                <p class="text-muted mt-sm">{{ book.pageCount }} pagine</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if book.description %}
+        <div class="mb-lg">
+            <h2 style="font-size: var(--font-lg); font-weight: 600; margin-bottom: var(--spacing-sm);">Descrizione</h2>
+            <p style="line-height: 1.7; color: var(--color-text-muted);">{{ book.description }}</p>
+        </div>
+    {% endif %}
+
+    {% if book.genres|length > 0 %}
+        <div class="mb-lg flex gap-sm" style="flex-wrap: wrap; gap: var(--spacing-sm);">
+            {% for genre in book.genres %}
+                <span style="padding: 4px 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-full); font-size: var(--font-sm);">{{ genre.name }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="mb-lg">
+        <h2 style="font-size: var(--font-lg); font-weight: 600; margin-bottom: var(--spacing-sm);">Recensioni</h2>
+        {% for review in reviews %}
+            <div class="review-card">
+                <div class="review-card__header">
+                    <span class="review-card__user">{{ review.user.displayName }}</span>
+                    <span class="review-card__stars">{{ review.rating }}/5</span>
+                </div>
+                {% if review.content %}
+                    <p class="review-card__text">{{ review.content }}</p>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="text-muted">Nessuna recensione ancora.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

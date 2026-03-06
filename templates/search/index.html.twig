@@ -1,0 +1,23 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Cerca - BookForEveryone{% endblock %}
+
+{% block body %}
+<div class="search-bar">
+    <form method="get" action="{{ path('app_search') }}">
+        <input type="text" name="q" value="{{ query|default('') }}" placeholder="Cerca libri, autori..." class="search-bar__input" autofocus>
+    </form>
+</div>
+
+{% if results is defined and results|length > 0 %}
+    <div class="book-list">
+        {% for book in results %}
+            {% include 'components/book_card.html.twig' with {'book': book} %}
+        {% endfor %}
+    </div>
+{% elseif query is defined and query|length > 0 %}
+    <div class="text-center mt-lg">
+        <p class="text-muted">Nessun risultato per "{{ query }}"</p>
+    </div>
+{% endif %}
+{% endblock %}

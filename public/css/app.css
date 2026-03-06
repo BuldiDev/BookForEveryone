@@ -1,0 +1,774 @@
+/* ==========================================================================
+   BookForEveryone - app.css
+   File unico per tutto il CSS del progetto.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. RESET & BASE
+   -------------------------------------------------------------------------- */
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+                 Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background-color: #fafafa;
+    min-height: 100vh;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+}
+
+input, textarea, select {
+    font: inherit;
+    color: inherit;
+}
+
+ul, ol {
+    list-style: none;
+}
+
+/* --------------------------------------------------------------------------
+   2. VARIABILI (custom properties)
+   -------------------------------------------------------------------------- */
+
+:root {
+    --color-primary: #2c3e50;
+    --color-primary-light: #3d5a80;
+    --color-accent: #e07a5f;
+    --color-accent-hover: #c96a52;
+    --color-bg: #fafafa;
+    --color-bg-card: #ffffff;
+    --color-text: #1a1a1a;
+    --color-text-muted: #6b7280;
+    --color-border: #e5e7eb;
+    --color-success: #059669;
+    --color-danger: #dc2626;
+    --color-star: #f59e0b;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+
+    --font-sm: 0.875rem;
+    --font-base: 1rem;
+    --font-lg: 1.125rem;
+    --font-xl: 1.25rem;
+    --font-2xl: 1.5rem;
+    --font-3xl: 2rem;
+}
+
+/* --------------------------------------------------------------------------
+   3. LAYOUT UTILITIES
+   -------------------------------------------------------------------------- */
+
+.container {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. FEED TIKTOK (scroll verticale full-screen)
+   -------------------------------------------------------------------------- */
+
+.feed {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.feed-item {
+    height: 100vh;
+    scroll-snap-align: start;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+    overflow: hidden;
+}
+
+.feed-item__cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.feed-item__overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--spacing-lg);
+    padding-bottom: var(--spacing-2xl);
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+    color: #fff;
+}
+
+.feed-item__title {
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    margin-bottom: var(--spacing-xs);
+}
+
+.feed-item__author {
+    font-size: var(--font-base);
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: var(--spacing-sm);
+}
+
+.feed-item__rating {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-sm);
+    color: var(--color-star);
+}
+
+/* Sidebar azioni (destra, stile TikTok) */
+.feed-item__actions {
+    position: absolute;
+    right: var(--spacing-md);
+    bottom: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.feed-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: #fff;
+    font-size: var(--font-sm);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.feed-action:active {
+    transform: scale(1.2);
+}
+
+.feed-action__icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.feed-action__icon svg {
+    width: 28px;
+    height: 28px;
+    fill: currentColor;
+}
+
+.feed-action--liked {
+    color: var(--color-danger);
+}
+
+.feed-action--read {
+    color: var(--color-success);
+}
+
+/* Pannello descrizione (swipe sinistro) */
+.feed-item__description-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.92);
+    color: #fff;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 10;
+}
+
+.feed-item__description-panel.is-open {
+    transform: translateX(0);
+}
+
+.feed-item__description-panel h2 {
+    font-size: var(--font-2xl);
+    margin-bottom: var(--spacing-sm);
+}
+
+.feed-item__description-panel p {
+    font-size: var(--font-base);
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.description-close {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    color: #fff;
+    font-size: var(--font-xl);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--spacing-sm);
+}
+
+/* --------------------------------------------------------------------------
+   5. PANNELLO RECENSIONI
+   -------------------------------------------------------------------------- */
+
+.reviews-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 400px;
+    height: 100%;
+    background: var(--color-bg-card);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 20;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+}
+
+.reviews-panel.is-open {
+    transform: translateX(0);
+}
+
+.reviews-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.reviews-panel__title {
+    font-size: var(--font-xl);
+    font-weight: 700;
+}
+
+.review-card {
+    padding: var(--spacing-md) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.review-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.review-card__user {
+    font-weight: 600;
+    font-size: var(--font-sm);
+}
+
+.review-card__stars {
+    color: var(--color-star);
+    font-size: var(--font-sm);
+    letter-spacing: 2px;
+}
+
+.review-card__text {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   6. AUTENTICAZIONE (login, register)
+   -------------------------------------------------------------------------- */
+
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-md);
+}
+
+.auth-card__title {
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------------
+   7. FORM
+   -------------------------------------------------------------------------- */
+
+.form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.form-group label {
+    display: block;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    color: var(--color-text);
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-base);
+    background: var(--color-bg);
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--color-primary-light);
+    box-shadow: 0 0 0 3px rgba(61, 90, 128, 0.15);
+}
+
+.form-control--error {
+    border-color: var(--color-danger);
+}
+
+.form-error {
+    font-size: var(--font-sm);
+    color: var(--color-danger);
+    margin-top: var(--spacing-xs);
+}
+
+/* --------------------------------------------------------------------------
+   8. BOTTONI
+   -------------------------------------------------------------------------- */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-base);
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.1s;
+    cursor: pointer;
+    border: none;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn--primary {
+    background-color: var(--color-primary);
+    color: #fff;
+}
+
+.btn--primary:hover {
+    background-color: var(--color-primary-light);
+}
+
+.btn--accent {
+    background-color: var(--color-accent);
+    color: #fff;
+}
+
+.btn--accent:hover {
+    background-color: var(--color-accent-hover);
+}
+
+.btn--outline {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.btn--outline:hover {
+    background: var(--color-bg);
+}
+
+.btn--block {
+    width: 100%;
+}
+
+.btn--sm {
+    padding: 6px 14px;
+    font-size: var(--font-sm);
+}
+
+.btn--danger {
+    background-color: var(--color-danger);
+    color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   9. ONBOARDING (selezione generi)
+   -------------------------------------------------------------------------- */
+
+.onboarding-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+}
+
+.onboarding-page__title {
+    font-size: var(--font-3xl);
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-primary);
+}
+
+.onboarding-page__subtitle {
+    font-size: var(--font-base);
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xl);
+}
+
+.genre-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: var(--spacing-md);
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: var(--spacing-xl);
+}
+
+.genre-chip {
+    padding: var(--spacing-md);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    font-weight: 600;
+    font-size: var(--font-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.genre-chip:hover {
+    border-color: var(--color-primary-light);
+}
+
+.genre-chip.is-selected {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   10. PROFILO
+   -------------------------------------------------------------------------- */
+
+.profile-header {
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-md);
+    background: var(--color-bg-card);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.profile-header__avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    margin: 0 auto var(--spacing-md);
+    background-color: var(--color-border);
+}
+
+.profile-header__name {
+    font-size: var(--font-xl);
+    font-weight: 700;
+}
+
+.profile-header__username {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+}
+
+.profile-header__bio {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+    margin-top: var(--spacing-sm);
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.profile-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-lg);
+}
+
+.profile-stat {
+    text-align: center;
+}
+
+.profile-stat__count {
+    font-size: var(--font-xl);
+    font-weight: 700;
+}
+
+.profile-stat__label {
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   11. BOOK CARD (per liste, profilo, risultati ricerca)
+   -------------------------------------------------------------------------- */
+
+.book-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+}
+
+.book-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s;
+}
+
+.book-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.book-card__cover {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    background-color: var(--color-border);
+}
+
+.book-card__info {
+    padding: var(--spacing-sm);
+}
+
+.book-card__title {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-card__author {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   12. NAVBAR (bottom mobile-style)
+   -------------------------------------------------------------------------- */
+
+.navbar-bottom {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--color-bg-card);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 50;
+}
+
+.navbar-bottom__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.navbar-bottom__item.is-active,
+.navbar-bottom__item:hover {
+    color: var(--color-primary);
+}
+
+.navbar-bottom__item svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+/* --------------------------------------------------------------------------
+   13. SEARCH
+   -------------------------------------------------------------------------- */
+
+.search-bar {
+    padding: var(--spacing-md);
+    background: var(--color-bg-card);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.search-bar__input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    font-size: var(--font-base);
+    background: var(--color-bg);
+}
+
+.search-bar__input:focus {
+    outline: none;
+    border-color: var(--color-primary-light);
+}
+
+/* --------------------------------------------------------------------------
+   14. FLASH MESSAGES
+   -------------------------------------------------------------------------- */
+
+.flash {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-sm);
+    font-weight: 500;
+}
+
+.flash--success {
+    background-color: #ecfdf5;
+    color: var(--color-success);
+    border: 1px solid #a7f3d0;
+}
+
+.flash--error {
+    background-color: #fef2f2;
+    color: var(--color-danger);
+    border: 1px solid #fecaca;
+}
+
+/* --------------------------------------------------------------------------
+   15. STAR RATING (input)
+   -------------------------------------------------------------------------- */
+
+.star-rating {
+    display: flex;
+    gap: 2px;
+}
+
+.star-rating__star {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    color: var(--color-border);
+    transition: color 0.15s;
+}
+
+.star-rating__star.is-filled {
+    color: var(--color-star);
+}
+
+.star-rating__star:hover,
+.star-rating__star:hover ~ .star-rating__star {
+    color: var(--color-star);
+}
+
+/* --------------------------------------------------------------------------
+   16. UTILITIES
+   -------------------------------------------------------------------------- */
+
+.text-center { text-align: center; }
+.text-muted { color: var(--color-text-muted); }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.gap-sm { gap: var(--spacing-sm); }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.w-full { width: 100%; }
+.hidden { display: none; }

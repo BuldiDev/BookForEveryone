@@ -1,0 +1,18 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Feed - BookForEveryone{% endblock %}
+
+{% block body %}
+<div class="feed" id="feed">
+    {% for book in books %}
+        {% include 'components/feed_item.html.twig' with {'book': book} %}
+    {% else %}
+        <div class="feed-item" style="background: var(--color-bg); color: var(--color-text);">
+            <div class="text-center">
+                <h2>Nessun libro trovato</h2>
+                <p class="text-muted mt-sm">Prova a seguire nuovi generi o aggiungere libri.</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}{{ user.displayName }} - BookForEveryone{% endblock %}
+
+{% block body %}
+<div class="profile-header">
+    {% if user.avatarUrl %}
+        <img src="{{ user.avatarUrl }}" alt="{{ user.username }}" class="profile-header__avatar">
+    {% else %}
+        <div class="profile-header__avatar" style="display: flex; align-items: center; justify-content: center; font-size: var(--font-2xl); font-weight: 700; color: #fff; background: var(--color-primary-light);">
+            {{ user.username|first|upper }}
+        </div>
+    {% endif %}
+
+    <h1 class="profile-header__name">{{ user.displayName }}</h1>
+    <p class="profile-header__username">@{{ user.username }}</p>
+    {% if user.bio %}
+        <p class="profile-header__bio">{{ user.bio }}</p>
+    {% endif %}
+
+    <div class="profile-stats">
+        <div class="profile-stat">
+            <span class="profile-stat__count">{{ user.readBooks|length }}</span>
+            <span class="profile-stat__label">Letti</span>
+        </div>
+        <div class="profile-stat">
+            <span class="profile-stat__count">{{ user.ownedBooks|length }}</span>
+            <span class="profile-stat__label">Posseduti</span>
+        </div>
+        <div class="profile-stat">
+            <span class="profile-stat__count">{{ user.followersCount }}</span>
+            <span class="profile-stat__label">Follower</span>
+        </div>
+        <div class="profile-stat">
+            <span class="profile-stat__count">{{ user.followingCount }}</span>
+            <span class="profile-stat__label">Seguiti</span>
+        </div>
+    </div>
+
+    {% if app.user and app.user != user %}
+        <form method="post" action="{{ path('app_follow_toggle', {id: user.id}) }}" class="mt-md">
+            <input type="hidden" name="_token" value="{{ csrf_token('follow' ~ user.id) }}">
+            {% if app.user.isFollowing(user) %}
+                <button type="submit" class="btn btn--outline btn--sm">Smetti di seguire</button>
+            {% else %}
+                <button type="submit" class="btn btn--primary btn--sm">Segui</button>
+            {% endif %}
+        </form>
+    {% endif %}
+</div>
+
+<div class="book-list">
+    {% for userBook in readBooks %}
+        {% include 'components/book_card.html.twig' with {'book': userBook.book} %}
+    {% endfor %}
+</div>
+{% endblock %}

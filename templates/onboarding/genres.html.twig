@@ -1,0 +1,27 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Scegli i tuoi generi - BookForEveryone{% endblock %}
+
+{% block body %}
+<div class="onboarding-page">
+    <h1 class="onboarding-page__title">Cosa ti piace leggere?</h1>
+    <p class="onboarding-page__subtitle">Seleziona almeno 3 generi per personalizzare il tuo feed.</p>
+
+    <form method="post" action="{{ path('app_onboarding_save') }}" id="onboarding-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('onboarding') }}">
+
+        <div class="genre-grid">
+            {% for genre in genres %}
+                <label class="genre-chip" data-genre-id="{{ genre.id }}">
+                    <input type="checkbox" name="genres[]" value="{{ genre.id }}" class="hidden">
+                    {{ genre.name }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn--accent btn--block" id="onboarding-submit" disabled>
+            Continua
+        </button>
+    </form>
+</div>
+{% endblock %}
