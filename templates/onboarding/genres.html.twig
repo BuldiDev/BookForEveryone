@@ -12,10 +12,10 @@
 
         <div class="genre-grid">
             {% for genre in genres %}
-                <label class="genre-chip" data-genre-id="{{ genre.id }}">
-                    <input type="checkbox" name="genres[]" value="{{ genre.id }}" class="hidden">
+                <div class="genre-chip" data-genre-id="{{ genre.id }}">
+                    <input type="checkbox" name="genres[]" value="{{ genre.id }}" hidden>
                     {{ genre.name }}
-                </label>
+                </div>
             {% endfor %}
         </div>
 

@@ -10,6 +10,8 @@ class GenreFixtures extends Fixture
 {
     public function load(ObjectManager $manager): void
     {
+        $genreRepo = $manager->getRepository(Genre::class);
+
         $genres = [
             ['name' => 'Fantasy', 'slug' => 'fantasy'],
             ['name' => 'Fantascienza', 'slug' => 'fantascienza'],
@@ -34,10 +36,13 @@ class GenreFixtures extends Fixture
         ];
 
         foreach ($genres as $data) {
-            $genre = new Genre();
-            $genre->setName($data['name']);
-            $genre->setSlug($data['slug']);
-            $manager->persist($genre);
+            $genre = $genreRepo->findOneBy(['slug' => $data['slug']]);
+            if (!$genre) {
+                $genre = new Genre();
+                $genre->setName($data['name']);
+                $genre->setSlug($data['slug']);
+                $manager->persist($genre);
+            }
 
             $this->addReference('genre_' . $data['slug'], $genre);
         }

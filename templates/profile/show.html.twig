@@ -2,7 +2,7 @@
 
 {% block title %}{{ user.displayName }} - BookForEveryone{% endblock %}
 
-{% block body %}
+{% block page_content %}
 <div class="profile-header">
     {% if user.avatarUrl %}
         <img src="{{ user.avatarUrl }}" alt="{{ user.username }}" class="profile-header__avatar">

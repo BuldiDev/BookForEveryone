@@ -2,7 +2,7 @@
 
 {% block title %}Cerca - BookForEveryone{% endblock %}
 
-{% block body %}
+{% block page_content %}
 <div class="search-bar">
     <form method="get" action="{{ path('app_search') }}">
         <input type="text" name="q" value="{{ query|default('') }}" placeholder="Cerca libri, autori..." class="search-bar__input" autofocus>

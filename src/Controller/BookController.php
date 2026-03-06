@@ -8,6 +8,7 @@ use App\Form\BookFormType;
 use App\Repository\BookRepository;
 use App\Repository\ReviewRepository;
 use App\Repository\UserBookRepository;
+use App\Service\BookPhotoUploader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,6 +23,7 @@ class BookController extends AbstractController
         Request $request,
         BookRepository $bookRepo,
         EntityManagerInterface $em,
+        BookPhotoUploader $uploader,
     ): Response {
         $book = new Book();
         $form = $this->createForm(BookFormType::class, $book);
@@ -35,6 +37,13 @@ class BookController extends AbstractController
                     $this->addFlash('success', 'Libro già presente! Aggiunto alla tua libreria.');
                     return $this->redirectToRoute('app_book_show', ['id' => $existing->getId()]);
                 }
+            }
+
+            // Upload copertina
+            $coverFile = $form->get('coverFile')->getData();
+            if ($coverFile) {
+                $coverPath = $uploader->upload($coverFile);
+                $book->setCoverUrl($coverPath);
             }
 
             $book->setAddedBy($this->getUser());

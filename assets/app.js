@@ -19,7 +19,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Feed: pannello descrizione
+// Feed: pannello descrizione (ora opacity-based)
 document.addEventListener('click', (e) => {
     const descBtn = e.target.closest('.js-action-description');
     if (descBtn) {
@@ -60,6 +60,23 @@ document.addEventListener('click', (e) => {
         navigator.share({
             title: 'BookForEveryone',
             url: `/book/${bookId}`
+        });
+    }
+});
+
+// Feed: frecce navigazione su/giù
+document.addEventListener('DOMContentLoaded', () => {
+    const feed = document.getElementById('feed');
+    const prevBtn = document.getElementById('feed-prev');
+    const nextBtn = document.getElementById('feed-next');
+
+    if (feed && prevBtn && nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            feed.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+        });
+
+        prevBtn.addEventListener('click', () => {
+            feed.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
         });
     }
 });

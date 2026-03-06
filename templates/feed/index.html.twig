@@ -2,17 +2,36 @@
 
 {% block title %}Feed - BookForEveryone{% endblock %}
 
-{% block body %}
-<div class="feed" id="feed">
-    {% for book in books %}
-        {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null} %}
-    {% else %}
-        <div class="feed-item" style="background: var(--color-bg); color: var(--color-text);">
-            <div class="text-center">
-                <h2>Nessun libro trovato</h2>
-                <p class="text-muted mt-sm">Prova a seguire nuovi generi o aggiungere libri.</p>
-            </div>
+{% block page_content %}
+<div class="feed-area">
+    {# Area centrale #}
+    <div class="feed-center">
+        <div class="feed-scroll" id="feed">
+            {% for book in books %}
+                <div class="feed-item" data-book-id="{{ book.id }}" data-index="{{ loop.index0 }}">
+                    {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null} %}
+                </div>
+            {% else %}
+                <div class="feed-item">
+                    <div class="feed-card__placeholder">
+                        <div>
+                            <h2>Nessun libro trovato</h2>
+                            <p style="font-size: 1rem; margin-top: 8px;">Prova a seguire nuovi generi o aggiungere libri.</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-    {% endfor %}
+    </div>
+
+    {# Frecce navigazione - colonna separata a destra #}
+    <div class="feed-nav-arrows">
+        <button class="feed-nav-arrow" id="feed-prev" title="Precedente">
+            <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+        </button>
+        <button class="feed-nav-arrow" id="feed-next" title="Successivo">
+            <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+        </button>
+    </div>
 </div>
 {% endblock %}

@@ -23,8 +23,8 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
                  Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
     line-height: 1.6;
-    color: #1a1a1a;
-    background-color: #fafafa;
+    color: var(--color-text);
+    background-color: var(--color-bg);
     min-height: 100vh;
 }
 
@@ -61,17 +61,17 @@ ul, ol {
    -------------------------------------------------------------------------- */
 
 :root {
-    --color-primary: #2c3e50;
-    --color-primary-light: #3d5a80;
+    --color-primary: #4a9eff;
+    --color-primary-light: #6bb3ff;
     --color-accent: #e07a5f;
     --color-accent-hover: #c96a52;
-    --color-bg: #fafafa;
-    --color-bg-card: #ffffff;
-    --color-text: #1a1a1a;
-    --color-text-muted: #6b7280;
-    --color-border: #e5e7eb;
-    --color-success: #059669;
-    --color-danger: #dc2626;
+    --color-bg: #0f0f0f;
+    --color-bg-card: #1a1a1a;
+    --color-text: #e8e8e8;
+    --color-text-muted: #8b8b8b;
+    --color-border: #2a2a2a;
+    --color-success: #10b981;
+    --color-danger: #ef4444;
     --color-star: #f59e0b;
 
     --radius-sm: 4px;
@@ -79,9 +79,9 @@ ul, ol {
     --radius-lg: 16px;
     --radius-full: 9999px;
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
 
     --spacing-xs: 4px;
     --spacing-sm: 8px;
@@ -122,117 +122,313 @@ ul, ol {
 }
 
 /* --------------------------------------------------------------------------
-   4. FEED TIKTOK (scroll verticale full-screen)
+   4. LAYOUT APP (sidebar + contenuto)
    -------------------------------------------------------------------------- */
 
-.feed {
+/* Layout globale: sidebar | contenuto */
+.app-layout {
+    display: flex;
+    height: 100vh;
+    background: var(--color-bg);
+    overflow: hidden;
+}
+
+/* Contenuto principale (tutte le pagine) */
+.app-content {
+    flex: 1;
+    overflow-y: auto;
+    height: 100vh;
+}
+
+/* Quando il contenuto è il feed, disabilita lo scroll di app-content */
+.app-content:has(.feed-area) {
+    overflow: hidden;
+}
+
+/* Feed area: centro + frecce affiancate */
+.feed-area {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Vecchio wrapper (mantenuto per retrocompat) */
+.feed-layout {
+    display: flex;
+    height: 100vh;
+    background: var(--color-bg);
+    overflow: hidden;
+}
+
+/* --- Sidebar sinistra --- */
+.feed-sidebar {
+    width: 240px;
+    min-width: 240px;
+    height: 100vh;
+    background: var(--color-bg);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-lg) 0;
+    overflow-y: auto;
+}
+
+.feed-sidebar__logo {
+    font-size: var(--font-xl);
+    font-weight: 700;
+    color: #fff;
+    padding: 0 var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.feed-sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.feed-sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: 12px var(--spacing-lg);
+    font-size: var(--font-base);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    transition: background 0.15s, color 0.15s;
+    border-radius: 0;
+}
+
+.feed-sidebar__link:hover {
+    background: #1e1e1e;
+    color: #fff;
+}
+
+.feed-sidebar__link.is-active {
+    color: #fff;
+    font-weight: 700;
+}
+
+.feed-sidebar__link svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+/* --- Area centrale: scroll verticale con cards --- */
+.feed-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.feed-scroll {
     height: 100vh;
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
 }
 
+.feed-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* --- Singolo item del feed --- */
 .feed-item {
     height: 100vh;
     scroll-snap-align: start;
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #000;
-    overflow: hidden;
+    position: relative;
 }
 
-.feed-item__cover {
+.feed-card {
+    position: relative;
+    width: auto;
+    height: calc(100vh - 40px);
+    max-height: 860px;
+    aspect-ratio: 3 / 4.5;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #111;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.feed-card__cover {
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
 }
 
-.feed-item__overlay {
+.feed-card__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    text-align: center;
+    padding: var(--spacing-lg);
+}
+
+/* Overlay info in basso sulla card */
+.feed-card__overlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: var(--spacing-lg);
-    padding-bottom: var(--spacing-2xl);
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-lg);
+    background: linear-gradient(transparent 0%, rgba(0, 0, 0, 0.75) 100%);
     color: #fff;
 }
 
-.feed-item__title {
-    font-size: var(--font-2xl);
+.feed-card__title {
+    font-size: var(--font-lg);
     font-weight: 700;
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: 2px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-.feed-item__author {
-    font-size: var(--font-base);
+.feed-card__author {
+    font-size: var(--font-sm);
     color: rgba(255, 255, 255, 0.8);
-    margin-bottom: var(--spacing-sm);
 }
 
-.feed-item__rating {
+.feed-card__rating {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
     font-size: var(--font-sm);
     color: var(--color-star);
+    margin-top: 4px;
 }
 
-/* Sidebar azioni (destra, stile TikTok) */
-.feed-item__actions {
-    position: absolute;
-    right: var(--spacing-md);
-    bottom: 120px;
+.feed-card__desc-text {
+    font-size: var(--font-sm);
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* --- Azioni a destra della card --- */
+.feed-actions {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-lg);
+    gap: 20px;
+    padding: 0 16px;
+    align-self: center;
 }
 
 .feed-action {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-xs);
-    color: #fff;
-    font-size: var(--font-sm);
-    background: none;
-    border: none;
+    gap: 4px;
     cursor: pointer;
-    transition: transform 0.15s ease;
+    border: none;
+    background: none;
+    color: #ccc;
+    transition: color 0.15s, transform 0.1s;
+}
+
+.feed-action:hover {
+    color: #fff;
 }
 
 .feed-action:active {
-    transform: scale(1.2);
+    transform: scale(1.15);
 }
 
 .feed-action__icon {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #2a2a2a;
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
 }
 
 .feed-action__icon svg {
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     fill: currentColor;
+}
+
+.feed-action__label {
+    font-size: 0.7rem;
+    font-weight: 600;
 }
 
 .feed-action--liked {
     color: var(--color-danger);
 }
 
+.feed-action--liked .feed-action__icon {
+    background: rgba(239, 68, 68, 0.2);
+}
+
 .feed-action--read {
     color: var(--color-success);
 }
 
-/* Pannello descrizione (swipe sinistro) */
-.feed-item__description-panel {
+.feed-action--read .feed-action__icon {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+/* --- Frecce navigazione (colonna far-right) --- */
+.feed-nav-arrows {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 56px;
+    min-width: 56px;
+    height: 100vh;
+}
+
+.feed-nav-arrow {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: var(--color-text);
+}
+
+.feed-nav-arrow:hover {
+    background: #3a3a3a;
+}
+
+.feed-nav-arrow svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+/* Pannello descrizione (overlay su card) */
+.feed-card__description-panel {
     position: absolute;
     top: 0;
     left: 0;
@@ -242,22 +438,25 @@ ul, ol {
     color: #fff;
     padding: var(--spacing-2xl) var(--spacing-lg);
     overflow-y: auto;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s, visibility 0.25s;
     z-index: 10;
+    border-radius: 16px;
 }
 
-.feed-item__description-panel.is-open {
-    transform: translateX(0);
+.feed-card__description-panel.is-open {
+    opacity: 1;
+    visibility: visible;
 }
 
-.feed-item__description-panel h2 {
+.feed-card__description-panel h2 {
     font-size: var(--font-2xl);
     margin-bottom: var(--spacing-sm);
 }
 
-.feed-item__description-panel p {
-    font-size: var(--font-base);
+.feed-card__description-panel p {
+    font-size: var(--font-sm);
     line-height: 1.7;
     color: rgba(255, 255, 255, 0.85);
 }
@@ -268,10 +467,77 @@ ul, ol {
     right: var(--spacing-md);
     color: #fff;
     font-size: var(--font-xl);
-    background: none;
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     cursor: pointer;
-    padding: var(--spacing-sm);
+    padding: 6px 10px;
+    border-radius: var(--radius-full);
+    line-height: 1;
+}
+
+/* --- Responsive: mobile --- */
+@media (max-width: 768px) {
+    .feed-sidebar {
+        display: none;
+    }
+
+    .app-content {
+        width: 100%;
+    }
+
+    .feed-area {
+        flex-direction: column;
+    }
+
+    .feed-nav-arrows {
+        display: none;
+    }
+
+    .feed-card {
+        border-radius: 0;
+        height: 100vh;
+        max-height: none;
+        aspect-ratio: auto;
+        width: 100vw;
+    }
+
+    .feed-card__description-panel {
+        border-radius: 0;
+    }
+
+    .feed-actions {
+        position: fixed;
+        right: 8px;
+        bottom: 72px;
+        margin: 0;
+        padding: 0;
+        z-index: 5;
+    }
+
+    .feed-action__icon {
+        background: rgba(0, 0, 0, 0.4);
+        box-shadow: none;
+    }
+
+    .feed-action {
+        color: #fff;
+    }
+
+    .feed-action--liked {
+        color: var(--color-danger);
+    }
+
+    .feed-action--liked .feed-action__icon {
+        background: rgba(220, 38, 38, 0.3);
+    }
+
+    .feed-action--read {
+        color: var(--color-success);
+    }
+
+    .feed-action--read .feed-action__icon {
+        background: rgba(5, 150, 105, 0.3);
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -392,7 +658,8 @@ ul, ol {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     font-size: var(--font-base);
-    background: var(--color-bg);
+    background: #1a1a1a;
+    color: var(--color-text);
     transition: border-color 0.2s;
 }
 
@@ -525,6 +792,7 @@ ul, ol {
 
 .genre-chip:hover {
     border-color: var(--color-primary-light);
+    background: rgba(74, 158, 255, 0.1);
 }
 
 .genre-chip.is-selected {
@@ -649,13 +917,20 @@ ul, ol {
     bottom: 0;
     left: 0;
     right: 0;
+    width: 100%;
     height: 56px;
-    background: var(--color-bg-card);
-    border-top: 1px solid var(--color-border);
-    display: flex;
+    background: #1a1a1a;
+    border-top: 1px solid #2a2a2a;
+    display: none;
     justify-content: space-around;
     align-items: center;
     z-index: 50;
+}
+
+@media (max-width: 768px) {
+    .navbar-bottom {
+        display: flex;
+    }
 }
 
 .navbar-bottom__item {
@@ -696,7 +971,8 @@ ul, ol {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-full);
     font-size: var(--font-base);
-    background: var(--color-bg);
+    background: #1a1a1a;
+    color: var(--color-text);
 }
 
 .search-bar__input:focus {
@@ -717,15 +993,15 @@ ul, ol {
 }
 
 .flash--success {
-    background-color: #ecfdf5;
+    background-color: rgba(16, 185, 129, 0.15);
     color: var(--color-success);
-    border: 1px solid #a7f3d0;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .flash--error {
-    background-color: #fef2f2;
+    background-color: rgba(239, 68, 68, 0.15);
     color: var(--color-danger);
-    border: 1px solid #fecaca;
+    border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 /* --------------------------------------------------------------------------
