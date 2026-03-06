@@ -17,41 +17,64 @@
     {% if followers|length > 0 %}
         <div class="user-list">
             {% for follower in followers %}
-                <div class="user-list-item">
-                    <a href="{{ path('app_profile', {username: follower.username}) }}" class="user-list-item__link">
-                        {% if follower.avatarUrl %}
-                            <img src="{{ follower.avatarUrl }}" alt="{{ follower.displayName }}" class="user-list-item__avatar">
-                        {% else %}
-                            <div class="user-list-item__avatar user-list-item__avatar--placeholder">
-                                {{ follower.displayName|first|upper }}
-                            </div>
-                        {% endif %}
-                        <div class="user-list-item__info">
-                            <div class="user-list-item__name">{{ follower.displayName }}</div>
-                            <div class="user-list-item__username">@{{ follower.username }}</div>
-                            {% if follower.bio %}
-                                <div class="user-list-item__bio">{{ follower.bio }}</div>
-                            {% endif %}
-                        </div>
-                    </a>
-                    {% if app.user and app.user != follower %}
-                        <button type="button" 
-                                class="btn btn--sm {% if app.user.isFollowing(follower) %}btn--outline{% else %}btn--primary{% endif %} user-follow-btn"
-                                data-action="follow"
-                                data-user-id="{{ follower.id }}"
-                                data-csrf="{{ csrf_token('follow' ~ follower.id) }}">
-                            {% if app.user.isFollowing(follower) %}
-                                Segui già
+                <div class="user-list-item-wrapper" data-index="{{ loop.index0 }}" {% if loop.index0 >= 20 %}style="display: none;"{% endif %}>
+                    <div class="user-list-item">
+                        <a href="{{ path('app_profile', {username: follower.username}) }}" class="user-list-item__link">
+                            {% if follower.avatarUrl %}
+                                <img src="{{ follower.avatarUrl }}" alt="{{ follower.displayName }}" class="user-list-item__avatar">
                             {% else %}
-                                Segui
+                                <div class="user-list-item__avatar user-list-item__avatar--placeholder">
+                                    {{ follower.displayName|first|upper }}
+                                </div>
                             {% endif %}
-                        </button>
-                    {% endif %}
+                            <div class="user-list-item__info">
+                                <div class="user-list-item__name">{{ follower.displayName }}</div>
+                                <div class="user-list-item__username">@{{ follower.username }}</div>
+                                {% if follower.bio %}
+                                    <div class="user-list-item__bio">{{ follower.bio }}</div>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% if app.user and app.user != follower %}
+                            <button type="button" 
+                                    class="btn btn--sm {% if app.user.isFollowing(follower) %}btn--outline{% else %}btn--primary{% endif %} user-follow-btn"
+                                    data-action="follow"
+                                    data-user-id="{{ follower.id }}"
+                                    data-csrf="{{ csrf_token('follow' ~ follower.id) }}">
+                                {% if app.user.isFollowing(follower) %}
+                                    Segui già
+                                {% else %}
+                                    Segui
+                                {% endif %}
+                            </button>
+                        {% endif %}
+                    </div>
                 </div>
             {% endfor %}
         </div>
+        {% if followers|length > 20 %}
+            <div style="text-align: center; margin-top: var(--spacing-lg);">
+                <button class="btn btn--outline" id="show-more-followers">
+                    Mostra altri ({{ followers|length - 20 }})
+                </button>
+            </div>
+        {% endif %}
     {% else %}
         <p class="text-muted">Nessun follower ancora.</p>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const showMoreBtn = document.getElementById('show-more-followers');
+    if (showMoreBtn) {
+        showMoreBtn.addEventListener('click', function() {
+            document.querySelectorAll('.user-list-item-wrapper[data-index]').forEach(item => {
+                item.style.display = '';
+            });
+            this.parentElement.remove();
+        });
+    }
+});
+</script>
 {% endblock %}

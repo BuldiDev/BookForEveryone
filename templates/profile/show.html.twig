@@ -52,35 +52,80 @@
 <div class="container" style="padding-top: var(--spacing-lg); padding-bottom: 80px;">
     <h2 style="font-size: var(--font-xl); font-weight: 700; margin-bottom: var(--spacing-md);">Libri consigliati</h2>
     {% if recommendedBooks|length > 0 %}
-        <div class="book-list">
+        <div class="book-list" data-section="recommended">
             {% for book in recommendedBooks %}
-                {% include 'components/book_card.html.twig' with {'book': book} %}
+                <div class="book-list-item" data-index="{{ loop.index0 }}" {% if loop.index0 >= 12 %}style="display: none;"{% endif %}>
+                    {% include 'components/book_card.html.twig' with {'book': book} %}
+                </div>
             {% endfor %}
         </div>
+        {% if recommendedBooks|length > 12 %}
+            <div style="text-align: center; margin-top: var(--spacing-md);">
+                <button class="btn btn--outline show-more-btn" data-target="recommended">
+                    Mostra altri ({{ recommendedBooks|length - 12 }})
+                </button>
+            </div>
+        {% endif %}
     {% else %}
         <p class="text-muted">Nessun libro consigliato ancora.</p>
     {% endif %}
 
     <h2 style="font-size: var(--font-xl); font-weight: 700; margin-top: var(--spacing-2xl); margin-bottom: var(--spacing-md);">Libri letti</h2>
     {% if readBooks|length > 0 %}
-        <div class="book-list">
+        <div class="book-list" data-section="read">
             {% for userBook in readBooks %}
-                {% include 'components/book_card.html.twig' with {'book': userBook.book} %}
+                <div class="book-list-item" data-index="{{ loop.index0 }}" {% if loop.index0 >= 12 %}style="display: none;"{% endif %}>
+                    {% include 'components/book_card.html.twig' with {'book': userBook.book} %}
+                </div>
             {% endfor %}
         </div>
+        {% if readBooks|length > 12 %}
+            <div style="text-align: center; margin-top: var(--spacing-md);">
+                <button class="btn btn--outline show-more-btn" data-target="read">
+                    Mostra altri ({{ readBooks|length - 12 }})
+                </button>
+            </div>
+        {% endif %}
     {% else %}
         <p class="text-muted">Nessun libro letto ancora.</p>
     {% endif %}
 
     <h2 style="font-size: var(--font-xl); font-weight: 700; margin-top: var(--spacing-2xl); margin-bottom: var(--spacing-md);">Libri posseduti</h2>
     {% if ownedBooks|length > 0 %}
-        <div class="book-list">
+        <div class="book-list" data-section="owned">
             {% for userBook in ownedBooks %}
-                {% include 'components/book_card.html.twig' with {'book': userBook.book} %}
+                <div class="book-list-item" data-index="{{ loop.index0 }}" {% if loop.index0 >= 12 %}style="display: none;"{% endif %}>
+                    {% include 'components/book_card.html.twig' with {'book': userBook.book} %}
+                </div>
             {% endfor %}
         </div>
+        {% if ownedBooks|length > 12 %}
+            <div style="text-align: center; margin-top: var(--spacing-md);">
+                <button class="btn btn--outline show-more-btn" data-target="owned">
+                    Mostra altri ({{ ownedBooks|length - 12 }})
+                </button>
+            </div>
+        {% endif %}
     {% else %}
         <p class="text-muted">Nessun libro posseduto ancora.</p>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.show-more-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const target = this.dataset.target;
+            const section = document.querySelector(`.book-list[data-section="${target}"]`);
+            
+            if (section) {
+                section.querySelectorAll('.book-list-item[data-index]').forEach(item => {
+                    item.style.display = '';
+                });
+                this.parentElement.remove();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
