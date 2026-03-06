@@ -21,30 +21,30 @@ class RegistrationFormType extends AbstractType
             ->add('username', TextType::class, [
                 'label' => 'Username',
                 'constraints' => [
-                    new NotBlank(['message' => 'Inserisci un username']),
-                    new Length(['min' => 3, 'max' => 50]),
-                    new Regex([
-                        'pattern' => '/^[a-zA-Z0-9_]+$/',
-                        'message' => 'Solo lettere, numeri e underscore',
-                    ]),
+                    new NotBlank(message: 'Inserisci un username'),
+                    new Length(min: 3, max: 50),
+                    new Regex(
+                        pattern: '/^[a-zA-Z0-9_]+$/',
+                        message: 'Solo lettere, numeri e underscore',
+                    ),
                 ],
             ])
             ->add('email', EmailType::class, [
                 'label' => 'Email',
                 'constraints' => [
-                    new NotBlank(['message' => 'Inserisci la tua email']),
+                    new NotBlank(message: 'Inserisci la tua email'),
                 ],
             ])
             ->add('plainPassword', PasswordType::class, [
                 'mapped' => false,
                 'label' => 'Password',
                 'constraints' => [
-                    new NotBlank(['message' => 'Inserisci una password']),
-                    new Length([
-                        'min' => 6,
-                        'minMessage' => 'La password deve avere almeno {{ limit }} caratteri',
-                        'max' => 4096,
-                    ]),
+                    new NotBlank(message: 'Inserisci una password'),
+                    new Length(
+                        min: 6,
+                        minMessage: 'La password deve avere almeno {{ limit }} caratteri',
+                        max: 4096,
+                    ),
                 ],
             ]);
     }

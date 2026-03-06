@@ -5,7 +5,7 @@
 {% block body %}
 <div class="feed" id="feed">
     {% for book in books %}
-        {% include 'components/feed_item.html.twig' with {'book': book} %}
+        {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null} %}
     {% else %}
         <div class="feed-item" style="background: var(--color-bg); color: var(--color-text);">
             <div class="text-center">
