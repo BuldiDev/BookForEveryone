@@ -140,8 +140,9 @@ ul, ol {
     height: 100vh;
 }
 
-/* Quando il contenuto è il feed, disabilita lo scroll di app-content */
-.app-content:has(.feed-area) {
+/* Quando il contenuto è il feed o la pagina prestito, disabilita lo scroll di app-content */
+.app-content:has(.feed-area),
+.app-content:has(.borrow-page) {
     overflow: hidden;
 }
 
@@ -1170,6 +1171,247 @@ ul, ol {
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     transition: box-shadow 0.2s;
+}
+
+/* --------------------------------------------------------------------------
+   BORROW PAGE (Prendi in prestito)
+   -------------------------------------------------------------------------- */
+
+.borrow-page {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.borrow-sidebar {
+    width: 380px;
+    min-width: 320px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    border-right: 1px solid var(--color-border);
+    background: var(--color-bg);
+    scrollbar-width: thin;
+}
+
+.borrow-sidebar__title {
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: var(--spacing-lg);
+}
+
+.borrow-controls {
+    margin-bottom: var(--spacing-lg);
+}
+
+.borrow-label {
+    display: block;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text);
+}
+
+.borrow-range-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.borrow-range {
+    flex: 1;
+    accent-color: var(--color-primary);
+    height: 6px;
+}
+
+.borrow-range-val {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--color-primary);
+    min-width: 50px;
+    text-align: right;
+}
+
+.borrow-notice {
+    background: rgba(74, 158, 255, 0.1);
+    border: 1px solid rgba(74, 158, 255, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-sm);
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+.borrow-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.borrow-empty {
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-md);
+    color: var(--color-text-muted);
+}
+
+.borrow-card {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    transition: border-color 0.2s, background 0.2s;
+    text-decoration: none;
+    color: var(--color-text);
+}
+
+.borrow-card:hover {
+    border-color: var(--color-primary);
+    background: #1e1e1e;
+}
+
+.borrow-card__cover {
+    width: 50px;
+    height: 72px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--color-border);
+}
+
+.borrow-card__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.borrow-card__no-cover {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.borrow-card__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.borrow-card__title {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.borrow-card__author {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.borrow-card__owner {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.borrow-card__distance {
+    font-size: 0.75rem;
+    color: var(--color-primary);
+    margin-top: 2px;
+    font-weight: 600;
+}
+
+.borrow-map-area {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    position: relative;
+}
+
+.borrow-map {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+/* --- Map picker per registrazione --- */
+
+.auth-card--wide {
+    max-width: 500px;
+}
+
+.map-search-wrap {
+    position: relative;
+}
+
+.address-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.address-results:empty {
+    display: none;
+}
+
+.address-result-item {
+    padding: 10px 14px;
+    font-size: var(--font-sm);
+    color: var(--color-text);
+    cursor: pointer;
+    border-bottom: 1px solid var(--color-border);
+    transition: background 0.15s;
+}
+
+.address-result-item:hover {
+    background: #1e1e1e;
+}
+
+.address-result-item:last-child {
+    border-bottom: none;
+}
+
+/* --- Borrow responsive --- */
+@media (max-width: 768px) {
+    .borrow-page {
+        flex-direction: column;
+    }
+
+    .borrow-sidebar {
+        width: 100%;
+        min-width: auto;
+        height: auto;
+        max-height: 40vh;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .borrow-map-area {
+        height: 60vh;
+    }
 }
 
 .book-card:hover {

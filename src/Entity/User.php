@@ -58,6 +58,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private bool $onboardingCompleted = false;
 
+    #[ORM\Column(nullable: true)]
+    private ?float $latitude = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $longitude = null;
+
     /** @var Collection<int, Genre> Generi preferiti scelti dall'utente */
     #[ORM\ManyToMany(targetEntity: Genre::class, inversedBy: 'users')]
     #[ORM\JoinTable(name: 'user_preferred_genre')]
@@ -313,6 +319,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getFollowingCount(): int
     {
         return $this->following->count();
+    }
+
+    // --- Posizione ---
+
+    public function getLatitude(): ?float
+    {
+        return $this->latitude;
+    }
+
+    public function setLatitude(?float $latitude): static
+    {
+        $this->latitude = $latitude;
+        return $this;
+    }
+
+    public function getLongitude(): ?float
+    {
+        return $this->longitude;
+    }
+
+    public function setLongitude(?float $longitude): static
+    {
+        $this->longitude = $longitude;
+        return $this;
+    }
+
+    public function hasLocation(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
     }
 
     public function __toString(): string

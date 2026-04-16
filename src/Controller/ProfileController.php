@@ -113,4 +113,41 @@ class ProfileController extends AbstractController
 
         return $this->redirectToRoute('app_profile', ['username' => $targetUser->getUsername()]);
     }
+
+    #[Route('/settings', name: 'app_settings')]
+    public function settings(
+        Request $request,
+        EntityManagerInterface $em,
+    ): Response {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('settings', $request->request->get('_token'))) {
+                $this->addFlash('danger', 'Token CSRF non valido.');
+                return $this->redirectToRoute('app_settings');
+            }
+
+            $displayName = trim($request->request->getString('displayName'));
+            $bio = trim($request->request->getString('bio'));
+            $lat = $request->request->get('latitude');
+            $lng = $request->request->get('longitude');
+
+            $user->setDisplayName($displayName ?: null);
+            $user->setBio($bio ?: null);
+            $user->setLatitude($lat !== '' && $lat !== null ? (float) $lat : null);
+            $user->setLongitude($lng !== '' && $lng !== null ? (float) $lng : null);
+
+            $em->flush();
+            $this->addFlash('success', 'Impostazioni salvate.');
+
+            return $this->redirectToRoute('app_settings');
+        }
+
+        return $this->render('profile/settings.html.twig', [
+            'user' => $user,
+        ]);
+    }
 }

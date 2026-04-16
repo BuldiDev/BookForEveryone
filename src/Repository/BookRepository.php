@@ -263,4 +263,82 @@ class BookRepository extends ServiceEntityRepository
 
         return $books;
     }
+
+    /**
+     * Libri posseduti fisicamente da utenti vicini (entro $radiusKm km).
+     * Usa la formula Haversine approssimata per filtrare per distanza.
+     * Restituisce array di ['book' => Book, 'owner' => User, 'distance' => float km].
+     */
+    public function findNearbyLendableBooks(float $lat, float $lng, float $radiusKm = 25.0, int $limit = 50): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        // Haversine in SQL (MySQL)
+        $sql = '
+            SELECT ub.book_id, ub.user_id,
+                (6371 * ACOS(
+                    LEAST(1, COS(RADIANS(:lat)) * COS(RADIANS(u.latitude))
+                    * COS(RADIANS(u.longitude) - RADIANS(:lng))
+                    + SIN(RADIANS(:lat)) * SIN(RADIANS(u.latitude)))
+                )) AS distance
+            FROM user_book ub
+            INNER JOIN `user` u ON u.id = ub.user_id
+            WHERE ub.owns_physically = 1
+              AND u.latitude IS NOT NULL
+              AND u.longitude IS NOT NULL
+            HAVING distance <= :radius
+            ORDER BY distance ASC
+            LIMIT :limit
+        ';
+
+        $rows = $conn->executeQuery($sql, [
+            'lat' => $lat,
+            'lng' => $lng,
+            'radius' => $radiusKm,
+            'limit' => $limit,
+        ], [
+            'limit' => \Doctrine\DBAL\ParameterType::INTEGER,
+        ])->fetchAllAssociative();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $bookIds = array_unique(array_column($rows, 'book_id'));
+        $userIds = array_unique(array_column($rows, 'user_id'));
+
+        $books = $this->createQueryBuilder('b')
+            ->leftJoin('b.genres', 'g')->addSelect('g')
+            ->where('b.id IN (:ids)')
+            ->setParameter('ids', array_map('intval', $bookIds))
+            ->getQuery()
+            ->getResult();
+
+        $bookMap = [];
+        foreach ($books as $b) {
+            $bookMap[$b->getId()] = $b;
+        }
+
+        $userRepo = $this->getEntityManager()->getRepository(User::class);
+        $users = $userRepo->findBy(['id' => array_map('intval', $userIds)]);
+        $userMap = [];
+        foreach ($users as $u) {
+            $userMap[$u->getId()] = $u;
+        }
+
+        $results = [];
+        foreach ($rows as $row) {
+            $bid = (int) $row['book_id'];
+            $uid = (int) $row['user_id'];
+            if (isset($bookMap[$bid], $userMap[$uid])) {
+                $results[] = [
+                    'book' => $bookMap[$bid],
+                    'owner' => $userMap[$uid],
+                    'distance' => round((float) $row['distance'], 1),
+                ];
+            }
+        }
+
+        return $results;
+    }
 }
