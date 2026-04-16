@@ -182,6 +182,7 @@ class BookController extends AbstractController
             }
 
             $book->setAddedBy($this->getUser());
+            $this->getUser()->addCulturePoints(10);
             $em->persist($book);
             $em->flush();
 

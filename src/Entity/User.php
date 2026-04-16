@@ -58,6 +58,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private bool $onboardingCompleted = false;
 
+    #[ORM\Column(options: ['default' => 0])]
+    private int $culturePoints = 0;
+
     #[ORM\Column(nullable: true)]
     private ?float $latitude = null;
 
@@ -319,6 +322,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getFollowingCount(): int
     {
         return $this->following->count();
+    }
+
+    // --- Punti cultura ---
+
+    public function getCulturePoints(): int
+    {
+        return $this->culturePoints;
+    }
+
+    public function addCulturePoints(int $points): static
+    {
+        $this->culturePoints += $points;
+        return $this;
     }
 
     // --- Posizione ---
