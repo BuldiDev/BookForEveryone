@@ -36,6 +36,7 @@ class BookFixtures extends Fixture implements DependentFixtureInterface
                 'publisher' => 'Bompiani',
                 'year' => 1954,
                 'cover' => '/uploads/books/signore-degli-anelli.jpg',
+                'genres' => ['fantasy', 'avventura', 'classici'],
             ],
             [
                 'title' => '1984',

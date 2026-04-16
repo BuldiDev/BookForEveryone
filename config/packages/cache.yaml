@@ -2,11 +2,9 @@ framework:
     cache:
         prefix_seed: bookforeveryone
 
-        # Use Redis as the main cache backend
-        app: cache.adapter.redis
-        default_redis_provider: '%env(REDIS_URL)%'
+        app: cache.adapter.filesystem
 
         pools:
             cache.social_feed:
-                adapter: cache.adapter.redis
+                adapter: cache.adapter.filesystem
                 default_lifetime: 300
