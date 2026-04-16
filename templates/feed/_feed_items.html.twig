@@ -1,5 +1,5 @@
 {% for book in books %}
     <div class="feed-item" data-book-id="{{ book.id }}">
-        {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null, 'stats': bookStats[book.id] ?? {avg_rating: null, likes_count: 0}} %}
+        {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null, 'stats': bookStats[book.id] ?? {avg_rating: null, likes_count: 0}, 'followingIds': followingIds} %}
     </div>
 {% endfor %}

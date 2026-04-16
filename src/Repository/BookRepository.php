@@ -80,6 +80,7 @@ class BookRepository extends ServiceEntityRepository
         $books = $this->createQueryBuilder('b')
             ->leftJoin('b.addedBy', 'a')->addSelect('a')
             ->leftJoin('b.genres', 'g')->addSelect('g')
+            ->leftJoin('b.photos', 'p')->addSelect('p')
             ->where('b.id IN (:ids)')
             ->setParameter('ids', $pageIds)
             ->getQuery()
@@ -208,30 +209,24 @@ class BookRepository extends ServiceEntityRepository
      */
     public function getBooksFromFollowedUsers(User $user, int $page = 1, int $limit = 30, array $excludeIds = []): array
     {
-        $following = $user->getFollowing();
-        if ($following->isEmpty()) {
-            return [];
-        }
-
-        $followingIds = array_map(fn($u) => $u->getId(), $following->toArray());
-
         $conn = $this->getEntityManager()->getConnection();
         $offset = ($page - 1) * $limit;
+        $userId = $user->getId();
 
-        // Libri con qualsiasi interazione dai seguiti UNION libri aggiunti dai seguiti
+        // Subquery per gli ID seguiti (evita di idratare tutti gli utenti seguiti)
         $sql = 'SELECT book_id AS id, MAX(ts) AS last_ts FROM ('
             . '  SELECT ub.book_id, COALESCE(ub.updated_at, ub.created_at) AS ts'
             . '  FROM user_book ub'
-            . '  WHERE ub.user_id IN (:followingIds)'
+            . '  WHERE ub.user_id IN (SELECT user_target FROM user_following WHERE user_source = :userId)'
             . '    AND (ub.liked = 1 OR ub.has_read = 1 OR ub.owns_physically = 1)'
             . '  UNION ALL'
             . '  SELECT b.id AS book_id, b.created_at AS ts'
             . '  FROM book b'
-            . '  WHERE b.added_by_id IN (:followingIds)'
+            . '  WHERE b.added_by_id IN (SELECT user_target FROM user_following WHERE user_source = :userId)'
             . ') AS sub ';
 
-        $params = ['followingIds' => $followingIds];
-        $types = ['followingIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER];
+        $params = ['userId' => $userId];
+        $types = [];
 
         if (!empty($excludeIds)) {
             $sql .= 'WHERE book_id NOT IN (:excludeIds) ';
@@ -253,6 +248,7 @@ class BookRepository extends ServiceEntityRepository
         $books = $this->createQueryBuilder('b')
             ->leftJoin('b.addedBy', 'a')->addSelect('a')
             ->leftJoin('b.genres', 'g')->addSelect('g')
+            ->leftJoin('b.photos', 'p')->addSelect('p')
             ->where('b.id IN (:ids)')
             ->setParameter('ids', $pageIds)
             ->getQuery()

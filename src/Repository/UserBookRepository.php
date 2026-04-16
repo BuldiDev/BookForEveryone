@@ -71,7 +71,7 @@ class UserBookRepository extends ServiceEntityRepository
     public function findReadByUser(User $user): array
     {
         return $this->createQueryBuilder('ub')
-            ->join('ub.book', 'b')
+            ->join('ub.book', 'b')->addSelect('b')
             ->where('ub.user = :user')
             ->andWhere('ub.hasRead = true')
             ->setParameter('user', $user)
@@ -84,7 +84,7 @@ class UserBookRepository extends ServiceEntityRepository
     public function findOwnedByUser(User $user): array
     {
         return $this->createQueryBuilder('ub')
-            ->join('ub.book', 'b')
+            ->join('ub.book', 'b')->addSelect('b')
             ->where('ub.user = :user')
             ->andWhere('ub.ownsPhysically = true')
             ->setParameter('user', $user)

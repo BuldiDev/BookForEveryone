@@ -64,11 +64,11 @@
         </a>
         {% if app.user and app.user != book.addedBy %}
             <button type="button" 
-                    class="feed-follow-btn {% if app.user.isFollowing(book.addedBy) %}feed-follow-btn--following{% endif %}"
+                    class="feed-follow-btn {% if book.addedBy.id in followingIds %}feed-follow-btn--following{% endif %}"
                     data-action="follow"
                     data-user-id="{{ book.addedBy.id }}"
                     data-csrf="{{ csrf_token('follow' ~ book.addedBy.id) }}">
-                {% if app.user.isFollowing(book.addedBy) %}
+                {% if book.addedBy.id in followingIds %}
                     <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
                 {% else %}
                     +

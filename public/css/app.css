@@ -224,6 +224,7 @@ ul, ol {
     align-items: center;
     position: relative;
     overflow-y: scroll;
+    scroll-snap-type: y mandatory;
     scrollbar-width: none;
 }
 
@@ -276,6 +277,7 @@ ul, ol {
     align-items: center;
     justify-content: center;
     position: relative;
+    scroll-snap-align: start;
 }
 
 .feed-card {

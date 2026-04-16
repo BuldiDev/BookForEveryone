@@ -20,19 +20,19 @@
 
     <div class="profile-stats">
         <div class="profile-stat">
-            <span class="profile-stat__count">{{ user.readBooks|length }}</span>
+            <span class="profile-stat__count">{{ readCount }}</span>
             <span class="profile-stat__label">Letti</span>
         </div>
         <div class="profile-stat">
-            <span class="profile-stat__count">{{ user.ownedBooks|length }}</span>
+            <span class="profile-stat__count">{{ ownedCount }}</span>
             <span class="profile-stat__label">Posseduti</span>
         </div>
         <a href="{{ path('app_profile_followers', {username: user.username}) }}" class="profile-stat profile-stat--link">
-            <span class="profile-stat__count">{{ user.followersCount }}</span>
+            <span class="profile-stat__count">{{ followersCount }}</span>
             <span class="profile-stat__label">Follower</span>
         </a>
         <a href="{{ path('app_profile_following', {username: user.username}) }}" class="profile-stat profile-stat--link">
-            <span class="profile-stat__count">{{ user.followingCount }}</span>
+            <span class="profile-stat__count">{{ followingCount }}</span>
             <span class="profile-stat__label">Seguiti</span>
         </a>
     </div>

@@ -28,10 +28,18 @@ class ProfileController extends AbstractController
             throw $this->createNotFoundException('Utente non trovato');
         }
 
+        $readBooks = $userBookRepo->findReadByUser($user);
+        $ownedBooks = $userBookRepo->findOwnedByUser($user);
+        $counts = $userRepo->getProfileCounts($user);
+
         return $this->render('profile/show.html.twig', [
             'user' => $user,
-            'readBooks' => $userBookRepo->findReadByUser($user),
-            'ownedBooks' => $userBookRepo->findOwnedByUser($user),
+            'readBooks' => $readBooks,
+            'ownedBooks' => $ownedBooks,
+            'readCount' => count($readBooks),
+            'ownedCount' => count($ownedBooks),
+            'followersCount' => $counts['followers'],
+            'followingCount' => $counts['following'],
             'recommendedBooks' => $bookRepo->findBy(['addedBy' => $user], ['createdAt' => 'DESC']),
         ]);
     }

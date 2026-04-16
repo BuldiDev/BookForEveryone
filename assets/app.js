@@ -142,35 +142,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextBtn = document.getElementById('feed-next');
 
     if (feed && feedCenter && prevBtn && nextBtn) {
-        const scrollToItem = (direction) => {
+        const getVisibleIndex = () => {
             const items = feed.querySelectorAll('.feed-item');
-            if (!items.length) return;
-
-            const feedRect = feedCenter.getBoundingClientRect();
-            const feedCenterY = feedRect.top + feedRect.height / 2;
-            let currentIndex = 0;
-
-            // Find which item is currently most visible
+            if (!items.length) return 0;
+            const scrollTop = feedCenter.scrollTop;
+            const viewH = feedCenter.clientHeight;
+            let best = 0;
+            let bestDist = Infinity;
             items.forEach((item, i) => {
-                const itemRect = item.getBoundingClientRect();
-                const itemCenter = itemRect.top + itemRect.height / 2;
-                if (Math.abs(itemCenter - feedCenterY) < Math.abs(items[currentIndex].getBoundingClientRect().top + items[currentIndex].getBoundingClientRect().height / 2 - feedCenterY)) {
-                    currentIndex = i;
-                }
+                const dist = Math.abs(item.offsetTop - scrollTop);
+                if (dist < bestDist) { bestDist = dist; best = i; }
             });
-
-            const targetIndex = direction === 'next'
-                ? Math.min(currentIndex + 1, items.length - 1)
-                : Math.max(currentIndex - 1, 0);
-
-            items[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return best;
         };
 
-        nextBtn.addEventListener('click', () => scrollToItem('next'));
-        prevBtn.addEventListener('click', () => scrollToItem('prev'));
+        const scrollToIndex = (idx) => {
+            const items = feed.querySelectorAll('.feed-item');
+            if (idx < 0 || idx >= items.length) return;
+            feedCenter.scrollTo({ top: items[idx].offsetTop, behavior: 'smooth' });
+        };
 
-        // Scroll infinito
-        let currentPage = 1;
+        nextBtn.addEventListener('click', () => scrollToIndex(getVisibleIndex() + 1));
+        prevBtn.addEventListener('click', () => scrollToIndex(getVisibleIndex() - 1));
+
+        // Scroll infinito (deduplicazione lato server via seenBookIds, no page param)
         let isLoading = false;
         let hasMore = true;
 
@@ -178,24 +173,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isLoading || !hasMore) return;
 
             const items = feed.querySelectorAll('.feed-item');
-            const totalItems = items.length;
-            
-            // Trova quale libro è attualmente visibile
+            if (!items.length) return;
+
+            const lastItem = items[items.length - 1];
+            const rect = lastItem.getBoundingClientRect();
             const feedRect = feedCenter.getBoundingClientRect();
-            const feedCenterY = feedRect.top + feedRect.height / 2;
-            
-            let currentVisibleIndex = 0;
-            items.forEach((item, i) => {
-                const itemRect = item.getBoundingClientRect();
-                const itemCenter = itemRect.top + itemRect.height / 2;
-                if (itemCenter > feedCenterY - 200 && itemCenter < feedCenterY + 200) {
-                    currentVisibleIndex = i;
-                }
-            });
-            
-            // Carica quando mancano 15 libri alla fine
-            const remainingItems = totalItems - currentVisibleIndex;
-            if (remainingItems <= 15) {
+
+            // Carica quando l'ultimo item è vicino alla viewport
+            if (rect.top < feedRect.bottom + feedRect.height * 2) {
                 loadMoreBooks();
             }
         });
@@ -204,14 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isLoading || !hasMore) return;
             
             isLoading = true;
-            currentPage++;
 
             try {
                 const section = feed.dataset.section || 'per-te';
-                const response = await fetch(`/feed/load-more?page=${currentPage}&section=${section}`);
+                const response = await fetch(`/feed/load-more?section=${section}`);
                 const data = await response.json();
 
-                if (data.html) {
+                if (data.html && data.html.trim()) {
                     feed.insertAdjacentHTML('beforeend', data.html);
                 }
 

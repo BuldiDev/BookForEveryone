@@ -46,4 +46,34 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getQuery()
             ->getResult();
     }
+
+    /** Conta followers e following con query COUNT (niente hydration) */
+    public function getProfileCounts(User $user): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $id = $user->getId();
+
+        // user_source segue user_target
+        $followersCount = (int) $conn->fetchOne(
+            'SELECT COUNT(*) FROM user_following WHERE user_target = :id',
+            ['id' => $id]
+        );
+        $followingCount = (int) $conn->fetchOne(
+            'SELECT COUNT(*) FROM user_following WHERE user_source = :id',
+            ['id' => $id]
+        );
+
+        return ['followers' => $followersCount, 'following' => $followingCount];
+    }
+
+    /** Restituisce gli ID degli utenti seguiti (niente hydration) */
+    public function getFollowingIds(User $user): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $rows = $conn->fetchAllAssociative(
+            'SELECT user_target FROM user_following WHERE user_source = :id',
+            ['id' => $user->getId()]
+        );
+        return array_map(fn($r) => (int) $r['user_target'], $rows);
+    }
 }
