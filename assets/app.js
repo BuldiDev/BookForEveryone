@@ -207,7 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPage++;
 
             try {
-                const response = await fetch(`/feed/load-more?page=${currentPage}`);
+                const section = feed.dataset.section || 'per-te';
+                const response = await fetch(`/feed/load-more?page=${currentPage}&section=${section}`);
                 const data = await response.json();
 
                 if (data.html) {

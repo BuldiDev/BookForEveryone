@@ -24,6 +24,34 @@ class UserBookRepository extends ServiceEntityRepository
     }
 
     /**
+     * Batch-load UserBook per un utente e più libri in una singola query.
+     * @param int[] $bookIds
+     * @return array<int, UserBook|null> Indicizzato per book ID
+     */
+    public function findByUserForBooks(User $user, array $bookIds): array
+    {
+        if (empty($bookIds)) {
+            return [];
+        }
+
+        $results = $this->createQueryBuilder('ub')
+            ->join('ub.book', 'b')
+            ->where('ub.user = :user')
+            ->andWhere('b.id IN (:bookIds)')
+            ->setParameter('user', $user)
+            ->setParameter('bookIds', $bookIds)
+            ->getQuery()
+            ->getResult();
+
+        $indexed = [];
+        foreach ($results as $ub) {
+            $indexed[$ub->getBook()->getId()] = $ub;
+        }
+
+        return $indexed;
+    }
+
+    /**
      * Trova o crea la relazione UserBook.
      */
     public function findOrCreate(User $user, Book $book): UserBook

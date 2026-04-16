@@ -219,8 +219,8 @@ ul, ol {
 .feed-center {
     flex: 1;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
     position: relative;
     overflow-y: scroll;
     scrollbar-width: none;
@@ -228,6 +228,39 @@ ul, ol {
 
 .feed-center::-webkit-scrollbar {
     display: none;
+}
+
+/* --- Tab Seguiti / Per te --- */
+.feed-tabs {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: linear-gradient(to bottom, rgba(15, 15, 15, 0.95) 60%, transparent);
+    pointer-events: auto;
+}
+
+.feed-tab {
+    font-size: var(--font-lg);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    padding: var(--spacing-xs) 0;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    text-decoration: none;
+}
+
+.feed-tab:hover {
+    color: var(--color-text);
+}
+
+.feed-tab.is-active {
+    color: #fff;
+    border-bottom-color: #fff;
 }
 
 .feed-scroll {

@@ -21,7 +21,8 @@ class BookRepository extends ServiceEntityRepository
 
     /**
      * Feed TikTok: libri filtrati per generi preferiti dell'utente.
-     * Ordine: prima libri con generi preferiti, poi tutti gli altri.
+     * Ordine: prima libri con generi preferiti, poi tutti gli altri, random con seed.
+     * Ottimizzato: 1 query nativa per gli ID con LIMIT, poi batch-hydrate.
      */
     public function getFeedForUser(User $user, int $page = 1, int $limit = 10, ?int $seed = null, array $excludeIds = []): array
     {
@@ -31,71 +32,106 @@ class BookRepository extends ServiceEntityRepository
             $seed = random_int(1, 999999);
         }
 
-        $preferredBooks = [];
-        $otherBooks = [];
+        $conn = $this->getEntityManager()->getConnection();
+        $offset = ($page - 1) * $limit;
 
-        // Se l'utente ha generi preferiti, separiamo i libri
+        // === Fase 1: Query nativa per gli ID con ORDER BY + LIMIT ===
         if (!$genres->isEmpty()) {
-            // Libri con i generi preferiti
-            $qb1 = $this->createQueryBuilder('b')
-                ->leftJoin('b.genres', 'g')
-                ->leftJoin('b.photos', 'p')
-                ->where('g IN (:genres)')
-                ->setParameter('genres', $genres);
-            
+            $genreIds = array_map(fn($g) => $g->getId(), $genres->toArray());
+
+            $sql = 'SELECT b.id, '
+                . 'MAX(CASE WHEN bg2.genre_id IS NOT NULL THEN 0 ELSE 1 END) AS pref, '
+                . 'CRC32(CONCAT(b.id, :seed)) AS rnd '
+                . 'FROM book b '
+                . 'LEFT JOIN book_genre bg2 ON bg2.book_id = b.id AND bg2.genre_id IN (:genreIds) ';
+
+            $params = ['seed' => (string) $seed, 'genreIds' => $genreIds];
+            $types = ['genreIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER];
+
             if (!empty($excludeIds)) {
-                $qb1->andWhere('b.id NOT IN (:excludeIds)')
-                    ->setParameter('excludeIds', $excludeIds);
+                $sql .= 'WHERE b.id NOT IN (:excludeIds) ';
+                $params['excludeIds'] = $excludeIds;
+                $types['excludeIds'] = \Doctrine\DBAL\ArrayParameterType::INTEGER;
             }
-            
-            $preferredBooks = $qb1->getQuery()->getResult();
 
-            // Ottieni gli ID dei libri preferiti per escluderli dalla seconda query
-            $preferredIds = array_map(fn($b) => $b->getId(), $preferredBooks);
-
-            // Tutti gli altri libri
-            $qb2 = $this->createQueryBuilder('b')
-                ->leftJoin('b.photos', 'p');
-            
-            $excludeAll = array_merge($preferredIds, $excludeIds);
-            if (!empty($excludeAll)) {
-                $qb2->where('b.id NOT IN (:excludeAll)')
-                    ->setParameter('excludeAll', $excludeAll);
-            }
-            
-            $otherBooks = $qb2->getQuery()->getResult();
+            $sql .= 'GROUP BY b.id ORDER BY pref ASC, rnd ASC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
         } else {
-            // Se non ha generi preferiti, mostra tutti i libri
-            $qb = $this->createQueryBuilder('b')
-                ->leftJoin('b.photos', 'p');
-            
+            $sql = 'SELECT b.id, CRC32(CONCAT(b.id, :seed)) AS rnd FROM book b ';
+
+            $params = ['seed' => (string) $seed];
+            $types = [];
+
             if (!empty($excludeIds)) {
-                $qb->where('b.id NOT IN (:excludeIds)')
-                    ->setParameter('excludeIds', $excludeIds);
+                $sql .= 'WHERE b.id NOT IN (:excludeIds) ';
+                $params['excludeIds'] = $excludeIds;
+                $types['excludeIds'] = \Doctrine\DBAL\ArrayParameterType::INTEGER;
             }
-            
-            $otherBooks = $qb->getQuery()->getResult();
+
+            $sql .= 'ORDER BY rnd ASC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
         }
 
-        // Randomizza ogni gruppo separatamente con lo stesso seed
-        usort($preferredBooks, function($a, $b) use ($seed) {
-            $hashA = crc32($a->getId() . '-preferred-' . $seed);
-            $hashB = crc32($b->getId() . '-preferred-' . $seed);
-            return $hashA <=> $hashB;
-        });
+        $pageIds = array_map('intval', array_column($conn->executeQuery($sql, $params, $types)->fetchAllAssociative(), 'id'));
 
-        usort($otherBooks, function($a, $b) use ($seed) {
-            $hashA = crc32($a->getId() . '-other-' . $seed);
-            $hashB = crc32($b->getId() . '-other-' . $seed);
-            return $hashA <=> $hashB;
-        });
+        if (empty($pageIds)) {
+            return [];
+        }
 
-        // Unisci: prima i preferiti, poi gli altri
-        $allBooks = array_merge($preferredBooks, $otherBooks);
+        // === Fase 2: Carica entità con addedBy e generi (1 sola DQL) ===
+        $books = $this->createQueryBuilder('b')
+            ->leftJoin('b.addedBy', 'a')->addSelect('a')
+            ->leftJoin('b.genres', 'g')->addSelect('g')
+            ->where('b.id IN (:ids)')
+            ->setParameter('ids', $pageIds)
+            ->getQuery()
+            ->getResult();
 
-        // Restituiamo la pagina richiesta
-        $offset = ($page - 1) * $limit;
-        return array_slice($allBooks, $offset, $limit);
+        // Mantieni l'ordine dalla query SQL
+        $idOrder = array_flip($pageIds);
+        usort($books, fn($a, $b) => $idOrder[$a->getId()] <=> $idOrder[$b->getId()]);
+
+        return $books;
+    }
+
+    /**
+     * Calcola averageRating e likesCount per un set di libri in 2 query native.
+     * @param int[] $bookIds
+     * @return array<int, array{avg_rating: ?float, likes_count: int}>
+     */
+    public function getBookStats(array $bookIds): array
+    {
+        if (empty($bookIds)) {
+            return [];
+        }
+
+        $conn = $this->getEntityManager()->getConnection();
+
+        // Rating medi
+        $rows = $conn->executeQuery(
+            'SELECT book_id, ROUND(AVG(rating), 1) AS avg_rating FROM review WHERE book_id IN (:ids) GROUP BY book_id',
+            ['ids' => $bookIds],
+            ['ids' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
+        )->fetchAllAssociative();
+
+        $stats = [];
+        foreach ($bookIds as $id) {
+            $stats[$id] = ['avg_rating' => null, 'likes_count' => 0];
+        }
+        foreach ($rows as $row) {
+            $stats[(int) $row['book_id']]['avg_rating'] = (float) $row['avg_rating'];
+        }
+
+        // Likes count
+        $rows = $conn->executeQuery(
+            'SELECT book_id, COUNT(*) AS likes_count FROM user_book WHERE book_id IN (:ids) AND liked = 1 GROUP BY book_id',
+            ['ids' => $bookIds],
+            ['ids' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
+        )->fetchAllAssociative();
+
+        foreach ($rows as $row) {
+            $stats[(int) $row['book_id']]['likes_count'] = (int) $row['likes_count'];
+        }
+
+        return $stats;
     }
 
     /**
@@ -163,5 +199,68 @@ class BookRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Libri suggeriti da persone che l'utente segue (interazioni o aggiunti dai seguiti).
+     * @param int[] $excludeIds
+     * @return Book[]
+     */
+    public function getBooksFromFollowedUsers(User $user, int $page = 1, int $limit = 30, array $excludeIds = []): array
+    {
+        $following = $user->getFollowing();
+        if ($following->isEmpty()) {
+            return [];
+        }
+
+        $followingIds = array_map(fn($u) => $u->getId(), $following->toArray());
+
+        $conn = $this->getEntityManager()->getConnection();
+        $offset = ($page - 1) * $limit;
+
+        // Libri con qualsiasi interazione dai seguiti UNION libri aggiunti dai seguiti
+        $sql = 'SELECT book_id AS id, MAX(ts) AS last_ts FROM ('
+            . '  SELECT ub.book_id, COALESCE(ub.updated_at, ub.created_at) AS ts'
+            . '  FROM user_book ub'
+            . '  WHERE ub.user_id IN (:followingIds)'
+            . '    AND (ub.liked = 1 OR ub.has_read = 1 OR ub.owns_physically = 1)'
+            . '  UNION ALL'
+            . '  SELECT b.id AS book_id, b.created_at AS ts'
+            . '  FROM book b'
+            . '  WHERE b.added_by_id IN (:followingIds)'
+            . ') AS sub ';
+
+        $params = ['followingIds' => $followingIds];
+        $types = ['followingIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER];
+
+        if (!empty($excludeIds)) {
+            $sql .= 'WHERE book_id NOT IN (:excludeIds) ';
+            $params['excludeIds'] = $excludeIds;
+            $types['excludeIds'] = \Doctrine\DBAL\ArrayParameterType::INTEGER;
+        }
+
+        $sql .= 'GROUP BY book_id ORDER BY last_ts DESC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+
+        $pageIds = array_map('intval', array_column(
+            $conn->executeQuery($sql, $params, $types)->fetchAllAssociative(),
+            'id'
+        ));
+
+        if (empty($pageIds)) {
+            return [];
+        }
+
+        $books = $this->createQueryBuilder('b')
+            ->leftJoin('b.addedBy', 'a')->addSelect('a')
+            ->leftJoin('b.genres', 'g')->addSelect('g')
+            ->where('b.id IN (:ids)')
+            ->setParameter('ids', $pageIds)
+            ->getQuery()
+            ->getResult();
+
+        $idOrder = array_flip($pageIds);
+        usort($books, fn($a, $b) => $idOrder[$a->getId()] <=> $idOrder[$b->getId()]);
+
+        return $books;
     }
 }

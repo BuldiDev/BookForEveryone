@@ -6,17 +6,28 @@
 <div class="feed-area">
     {# Area centrale #}
     <div class="feed-center">
-        <div class="feed-scroll" id="feed">
+        {# Tab di navigazione #}
+        <div class="feed-tabs">
+            <a href="{{ path('app_feed', {section: 'seguiti'}) }}" class="feed-tab {{ section == 'seguiti' ? 'is-active' : '' }}">Seguiti</a>
+            <a href="{{ path('app_feed', {section: 'per-te'}) }}" class="feed-tab {{ section == 'per-te' ? 'is-active' : '' }}">Per te</a>
+        </div>
+
+        <div class="feed-scroll" id="feed" data-section="{{ section }}">
             {% for book in books %}
                 <div class="feed-item" data-book-id="{{ book.id }}" data-index="{{ loop.index0 }}">
-                    {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null} %}
+                    {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null, 'stats': bookStats[book.id] ?? {avg_rating: null, likes_count: 0}} %}
                 </div>
             {% else %}
                 <div class="feed-item">
                     <div class="feed-card__placeholder">
                         <div>
-                            <h2>Nessun libro trovato</h2>
-                            <p style="font-size: 1rem; margin-top: 8px;">Prova a seguire nuovi generi o aggiungere libri.</p>
+                            {% if section == 'seguiti' %}
+                                <h2>Nessun libro dai seguiti</h2>
+                                <p style="font-size: 1rem; margin-top: 8px;">Segui altri utenti per vedere i libri che suggeriscono.</p>
+                            {% else %}
+                                <h2>Nessun libro trovato</h2>
+                                <p style="font-size: 1rem; margin-top: 8px;">Prova a seguire nuovi generi o aggiungere libri.</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

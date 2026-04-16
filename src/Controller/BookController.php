@@ -167,7 +167,7 @@ class BookController extends AbstractController
             $apiData = $this->fetchBookDataFromApis($book->getIsbn(), $httpClient);
             if ($apiData) {
                 $book->setTitle($apiData['title']);
-                $book->setAuthor($apiData['authors']);
+                $book->setBookAuthor($apiData['authors']);
                 $book->setDescription($apiData['description']);
                 $book->setPageCount($apiData['pageCount']);
                 $book->setPublisher($apiData['publisher']);

@@ -52,6 +52,7 @@ class BookFormType extends AbstractType
             ->add('pageCount', IntegerType::class, [
                 'label' => 'Pagine',
                 'required' => false,
+                'empty_data' => null,
             ])
             ->add('publisher', TextType::class, [
                 'label' => 'Editore',
@@ -60,6 +61,7 @@ class BookFormType extends AbstractType
             ->add('publicationYear', IntegerType::class, [
                 'label' => 'Anno di pubblicazione',
                 'required' => false,
+                'empty_data' => null,
             ])
             ->add('coverFile', FileType::class, [
                 'label' => 'Copertina ufficiale',
