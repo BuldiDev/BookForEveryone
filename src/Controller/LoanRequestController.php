@@ -37,6 +37,10 @@ class LoanRequestController extends AbstractController
     ): Response {
         $me = $this->getUser();
 
+        if ($me->getId() === $ownerId) {
+            throw $this->createAccessDeniedException('Non puoi richiedere il tuo stesso libro.');
+        }
+
         if (!$this->isCsrfTokenValid('loan_request_new', $request->request->getString('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF non valido.');
         }
