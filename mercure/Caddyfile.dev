@@ -1,0 +1,27 @@
+{
+	auto_https off
+	http_port 3000
+	admin off
+	log {
+		level INFO
+	}
+}
+
+:3000
+
+route {
+	redir / /.well-known/mercure/ui/
+	encode zstd gzip
+
+	mercure {
+		publisher_jwt {env.MERCURE_PUBLISHER_JWT_KEY} HS256
+		subscriber_jwt {env.MERCURE_SUBSCRIBER_JWT_KEY} HS256
+		cors_origins http://localhost:8000 http://127.0.0.1:8000
+		publish_origins *
+		anonymous
+		subscriptions
+	}
+
+	respond /healthz 200
+	respond "Not Found" 404
+}

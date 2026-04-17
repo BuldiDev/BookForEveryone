@@ -1,0 +1,9 @@
+{# Turbo Stream update: nuovo messaggio pubblicato via Mercure #}
+<turbo-stream action="append" target="messages-list">
+    <template>
+        <div class="chat-bubble" id="message-{{ message.id }}" data-sender-id="{{ message.sender.id }}">
+            <div class="chat-bubble__content">{{ message.content }}</div>
+            <div class="chat-bubble__time">{{ message.createdAt|date('H:i') }}</div>
+        </div>
+    </template>
+</turbo-stream>

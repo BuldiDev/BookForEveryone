@@ -17,4 +17,19 @@ services:
       - ./docker/db/data:/var/lib/mysql:rw
 ###< doctrine/doctrine-bundle ###
 
+###> symfony/mercure-bundle ###
+  mercure:
+    image: dunglas/mercure
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ':3000'
+      MERCURE_PUBLISHER_JWT_KEY: 'BookForEveryoneMercureSecret2026!'
+      MERCURE_SUBSCRIBER_JWT_KEY: 'BookForEveryoneMercureSecret2026!'
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins http://localhost:8000 http://127.0.0.1:8000
+        anonymous
+    ports:
+      - "3000:3000"
+###< symfony/mercure-bundle ###
+
 # Note: Docker non installato. MariaDB è in esecuzione localmente come servizio Windows.

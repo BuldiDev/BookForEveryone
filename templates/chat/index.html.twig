@@ -1,0 +1,55 @@
+{# Lista conversazioni #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Chat — BookForEveryone{% endblock %}
+
+{% block page_content %}
+<div class="chat-list-page">
+    <div class="chat-list-header">
+        <h1 class="chat-list-title">Chat</h1>
+    </div>
+
+    {% if conversations is empty %}
+        <div class="chat-empty">
+            <svg viewBox="0 0 24 24" width="64" height="64" fill="var(--color-text-muted)">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+            </svg>
+            <p>Nessuna conversazione ancora.</p>
+            <p class="chat-empty__hint">Visita il profilo di un utente per iniziare a chattare!</p>
+        </div>
+    {% else %}
+        <div class="chat-conversations">
+            {% for conversation in conversations %}
+                {% set other = conversation.getOtherParticipant(app.user) %}
+                {% set lastMsg = conversation.lastMessage %}
+                <a href="{{ path('app_chat_show', {id: conversation.id}) }}" class="chat-conversation-item">
+                    <div class="chat-conversation-item__avatar">
+                        {% if other.avatarUrl %}
+                            <img src="{{ other.avatarUrl }}" alt="{{ other.displayName }}">
+                        {% else %}
+                            <div class="chat-conversation-item__avatar-placeholder">
+                                {{ other.displayName|first|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="chat-conversation-item__info">
+                        <div class="chat-conversation-item__name">{{ other.displayName }}</div>
+                        {% if lastMsg %}
+                            <div class="chat-conversation-item__preview">
+                                {% if lastMsg.sender.id == app.user.id %}Tu: {% endif %}{{ lastMsg.content|length > 50 ? lastMsg.content|slice(0, 50) ~ '…' : lastMsg.content }}
+                            </div>
+                        {% else %}
+                            <div class="chat-conversation-item__preview chat-conversation-item__preview--empty">Nessun messaggio</div>
+                        {% endif %}
+                    </div>
+                    {% if lastMsg %}
+                        <div class="chat-conversation-item__time">
+                            {{ lastMsg.createdAt|date('H:i') }}
+                        </div>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

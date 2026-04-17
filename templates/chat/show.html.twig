@@ -1,0 +1,94 @@
+{# Conversazione singola con messaggi real-time via Mercure + Turbo Stream #}
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Chat con {{ other.displayName }} — BookForEveryone{% endblock %}
+
+{% block page_content %}
+<div class="chat-page">
+    {# Header conversazione #}
+    <div class="chat-header">
+        <a href="{{ path('app_chat') }}" class="chat-header__back">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+        </a>
+        <a href="{{ path('app_profile', {username: other.username}) }}" class="chat-header__user">
+            {% if other.avatarUrl %}
+                <img src="{{ other.avatarUrl }}" alt="{{ other.displayName }}" class="chat-header__avatar">
+            {% else %}
+                <div class="chat-header__avatar chat-header__avatar--placeholder">
+                    {{ other.displayName|first|upper }}
+                </div>
+            {% endif %}
+            <span class="chat-header__name">{{ other.displayName }}</span>
+        </a>
+    </div>
+
+    {# Area messaggi - Turbo Stream via Mercure aggiorna questo container #}
+    <turbo-stream-source src="{{ mercure('chat/conversation/' ~ conversation.id) }}"></turbo-stream-source>
+
+    <div class="chat-messages" id="chat-messages" data-current-user-id="{{ app.user.id }}">
+        <div class="chat-messages__list" id="messages-list">
+            {% for message in messages %}
+                {% include 'chat/_message.html.twig' with {message: message, me: app.user} %}
+            {% endfor %}
+        </div>
+    </div>
+
+    {# Form invio messaggio #}
+    <form action="{{ path('app_chat_send', {id: conversation.id}) }}" method="post" class="chat-input-form" data-turbo="true">
+        <input type="hidden" name="_token" value="{{ csrf_token('chat_send') }}">
+        <input
+            type="text"
+            name="content"
+            class="chat-input-form__input"
+            placeholder="Scrivi un messaggio..."
+            autocomplete="off"
+            required
+        >
+        <button type="submit" class="chat-input-form__send">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+        </button>
+    </form>
+</div>
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Scroll automatico ai messaggi più recenti
+        const chatContainer = document.getElementById('chat-messages');
+        const currentUserId = chatContainer?.dataset.currentUserId;
+
+        function scrollToBottom() {
+            if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        scrollToBottom();
+
+        // Osserva nuovi messaggi aggiunti via Turbo Stream e correggi mine/theirs
+        const list = document.getElementById('messages-list');
+        if (list) {
+            const observer = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    for (const node of mutation.addedNodes) {
+                        if (node.nodeType === 1 && node.classList.contains('chat-bubble')) {
+                            const senderId = node.dataset.senderId;
+                            node.classList.remove('chat-bubble--mine', 'chat-bubble--theirs');
+                            node.classList.add(senderId === currentUserId ? 'chat-bubble--mine' : 'chat-bubble--theirs');
+                        }
+                    }
+                }
+                scrollToBottom();
+            });
+            observer.observe(list, { childList: true });
+        }
+
+        // Reset form dopo invio
+        document.querySelector('.chat-input-form')?.addEventListener('turbo:submit-end', (e) => {
+            e.target.reset();
+            e.target.querySelector('.chat-input-form__input')?.focus();
+        });
+    </script>
+{% endblock %}
+{% endblock %}
