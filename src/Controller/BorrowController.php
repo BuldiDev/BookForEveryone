@@ -59,6 +59,7 @@ class BorrowController extends AbstractController
                 'coverUrl' => $book->getCoverUrl(),
                 'ownerUsername' => $owner->getUsername(),
                 'ownerDisplayName' => $owner->getDisplayName(),
+                'ownerId' => $owner->getId(),
                 'ownerLat' => $owner->getLatitude(),
                 'ownerLng' => $owner->getLongitude(),
                 'distance' => $item['distance'],

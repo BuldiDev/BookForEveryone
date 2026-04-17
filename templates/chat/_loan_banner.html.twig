@@ -1,0 +1,177 @@
+{#
+  Banner fisso in cima alla chat per la richiesta di prestito.
+  Variabili: loanRequest (LoanRequest), me (User)
+#}
+{% set lr = loanRequest %}
+{% set book = lr.book %}
+{% set isRequester = lr.isRequester(me) %}
+{% set isOwner = lr.isOwner(me) %}
+
+<div class="loan-banner" id="loan-banner">
+    {# ── Info libro ── #}
+    <div class="loan-banner__book">
+        {% if book.coverUrl %}
+            <img src="{{ book.coverUrl }}" alt="{{ book.title }}" class="loan-banner__cover">
+        {% else %}
+            <div class="loan-banner__cover loan-banner__cover--placeholder">📚</div>
+        {% endif %}
+        <div class="loan-banner__book-info">
+            <div class="loan-banner__book-title">{{ book.title }}</div>
+            <div class="loan-banner__book-author">{{ book.bookAuthor }}</div>
+        </div>
+    </div>
+
+    {# ── Stato del banner ── #}
+    {% if lr.status == 'pending' %}
+        {# Il richiedente ha aperto la richiesta, il proprietario deve rispondere #}
+        <div class="loan-banner__status">
+            <span class="loan-banner__label loan-banner__label--pending">
+                📖 Richiesta prestito inviata
+            </span>
+            <span class="loan-banner__hint">-1 Culture Point usato per la richiesta</span>
+        </div>
+
+        {% if isOwner %}
+            <div class="loan-banner__actions">
+                <p class="loan-banner__action-title">Proponi quanti punti vuoi per il libro:</p>
+                <form action="{{ path('app_loan_request_propose', {id: lr.id}) }}" method="post" class="loan-banner__propose-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+                    <input type="number" name="proposed_points" min="1" max="999" value="5" class="loan-banner__points-input">
+                    <span class="loan-banner__points-label">Culture Points</span>
+                    <button type="submit" class="btn btn--primary btn--sm">Proponi</button>
+                </form>
+                <form action="{{ path('app_loan_request_reject', {id: lr.id}) }}" method="post" class="loan-banner__reject-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+                    <button type="submit" class="btn btn--outline btn--sm loan-banner__reject-btn">Rifiuta richiesta</button>
+                </form>
+            </div>
+        {% else %}
+            <div class="loan-banner__waiting">
+                <span>⏳ In attesa che {{ lr.owner.displayName }} risponda…</span>
+            </div>
+        {% endif %}
+
+    {% elseif lr.status == 'proposed' %}
+        {# Il proprietario ha proposto N punti #}
+        <div class="loan-banner__status">
+            <span class="loan-banner__label loan-banner__label--proposed">
+                💰 Proposta: {{ lr.proposedPoints }} Culture Points
+            </span>
+        </div>
+
+        {% if isRequester %}
+            <div class="loan-banner__actions">
+                <p class="loan-banner__action-title">{{ lr.owner.displayName }} ti chiede {{ lr.proposedPoints }} Culture Points per questo libro. Accetti?</p>
+                <div class="loan-banner__btn-row">
+                    <form action="{{ path('app_loan_request_accept_proposal', {id: lr.id}) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+                        <button type="submit" class="btn btn--primary btn--sm">✅ Accetta proposta</button>
+                    </form>
+                    <form action="{{ path('app_loan_request_reject', {id: lr.id}) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+                        <button type="submit" class="btn btn--outline btn--sm loan-banner__reject-btn">❌ Rifiuta</button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="loan-banner__waiting">
+                <span>⏳ In attesa che {{ lr.requester.displayName }} accetti la proposta…</span>
+            </div>
+        {% endif %}
+
+    {% elseif lr.status == 'awaiting_start' %}
+        {# Entrambi devono confermare "Inizio Scambio" #}
+        <div class="loan-banner__status loan-banner__status--highlight">
+            <span class="loan-banner__label loan-banner__label--start">🤝 Inizio Scambio</span>
+            <span class="loan-banner__hint">Accordo: {{ lr.proposedPoints }} Culture Points · Entrambi devono confermare</span>
+        </div>
+
+        <div class="loan-banner__handshake">
+            <div class="loan-banner__handshake-row">
+                <span class="loan-banner__handshake-user">{{ lr.requester.displayName }}</span>
+                {% if lr.requesterAcceptedStart %}
+                    <span class="loan-banner__check loan-banner__check--done">✅</span>
+                {% elseif isRequester %}
+                    <form action="{{ path('app_loan_request_confirm_start', {id: lr.id}) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+                        <button type="submit" class="btn btn--primary btn--sm">Conferma</button>
+                    </form>
+                {% else %}
+                    <span class="loan-banner__check loan-banner__check--pending">⏳</span>
+                {% endif %}
+            </div>
+            <div class="loan-banner__handshake-row">
+                <span class="loan-banner__handshake-user">{{ lr.owner.displayName }}</span>
+                {% if lr.ownerAcceptedStart %}
+                    <span class="loan-banner__check loan-banner__check--done">✅</span>
+                {% elseif isOwner %}
+                    <form action="{{ path('app_loan_request_confirm_start', {id: lr.id}) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+                        <button type="submit" class="btn btn--primary btn--sm">Conferma</button>
+                    </form>
+                {% else %}
+                    <span class="loan-banner__check loan-banner__check--pending">⏳</span>
+                {% endif %}
+            </div>
+        </div>
+
+    {% elseif lr.status == 'in_progress' %}
+        {# Scambio fisico in corso: concordarsi nella realtà #}
+        <div class="loan-banner__status loan-banner__status--highlight">
+            <span class="loan-banner__label loan-banner__label--progress">📦 Scambio in corso</span>
+            <span class="loan-banner__hint">Il libro è stato rimosso dalla mappa · Accordatevi nella realtà per lo scambio fisico</span>
+        </div>
+
+        <div class="loan-banner__handshake">
+            <p class="loan-banner__action-title">Quando avete completato lo scambio fisico, confermate entrambi:</p>
+            <div class="loan-banner__handshake-row">
+                <span class="loan-banner__handshake-user">{{ lr.requester.displayName }}</span>
+                {% if lr.requesterAcceptedEnd %}
+                    <span class="loan-banner__check loan-banner__check--done">✅</span>
+                {% elseif isRequester %}
+                    <form action="{{ path('app_loan_request_confirm_end', {id: lr.id}) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+                        <button type="submit" class="btn btn--primary btn--sm">Ho ricevuto il libro</button>
+                    </form>
+                {% else %}
+                    <span class="loan-banner__check loan-banner__check--pending">⏳</span>
+                {% endif %}
+            </div>
+            <div class="loan-banner__handshake-row">
+                <span class="loan-banner__handshake-user">{{ lr.owner.displayName }}</span>
+                {% if lr.ownerAcceptedEnd %}
+                    <span class="loan-banner__check loan-banner__check--done">✅</span>
+                {% elseif isOwner %}
+                    <form action="{{ path('app_loan_request_confirm_end', {id: lr.id}) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+                        <button type="submit" class="btn btn--primary btn--sm">Ho dato il libro</button>
+                    </form>
+                {% else %}
+                    <span class="loan-banner__check loan-banner__check--pending">⏳</span>
+                {% endif %}
+            </div>
+        </div>
+
+    {% elseif lr.status == 'completed' %}
+        <div class="loan-banner__status">
+            <span class="loan-banner__label loan-banner__label--completed">🎉 Scambio completato!</span>
+            <span class="loan-banner__hint">
+                {{ lr.requester.displayName }} ha ceduto {{ lr.proposedPoints }} Culture Points ·
+                {{ lr.owner.displayName }} ha ricevuto {{ lr.proposedPoints }} Culture Points
+            </span>
+        </div>
+
+    {% elseif lr.status == 'rejected' %}
+        <div class="loan-banner__status">
+            <span class="loan-banner__label loan-banner__label--rejected">❌ Richiesta rifiutata</span>
+        </div>
+    {% endif %}
+
+    {# Tasto per rifiutare durante awaiting_start/in_progress #}
+    {% if lr.status in ['awaiting_start', 'in_progress'] %}
+        <form action="{{ path('app_loan_request_reject', {id: lr.id}) }}" method="post" class="loan-banner__reject-form">
+            <input type="hidden" name="_token" value="{{ csrf_token('loan_action_' ~ lr.id) }}">
+            <button type="submit" class="btn btn--outline btn--sm loan-banner__reject-btn">Annulla scambio</button>
+        </form>
+    {% endif %}
+</div>

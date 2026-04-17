@@ -2002,3 +2002,189 @@ ul, ol {
         padding: var(--spacing-sm) var(--spacing-md);
     }
 }
+
+/* ========================================
+   18. LOAN REQUEST BANNER
+======================================== */
+
+#loan-banner-wrapper {
+    flex-shrink: 0;
+}
+
+.loan-banner {
+    background: var(--color-surface-2, #1e2130);
+    border-bottom: 1px solid var(--color-border, rgba(255,255,255,.08));
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.loan-banner__book {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.loan-banner__cover {
+    width: 44px;
+    height: 60px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--color-surface-3, #2a2f45);
+}
+
+.loan-banner__book-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.loan-banner__book-title {
+    font-weight: 600;
+    font-size: .95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.loan-banner__book-author {
+    font-size: .8rem;
+    color: var(--color-text-muted, #8b92a8);
+}
+
+.loan-banner__status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: .82rem;
+}
+
+.loan-banner__label {
+    font-weight: 700;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.loan-banner__label--pending  { background: #3b3400; color: #f5c400; }
+.loan-banner__label--proposed { background: #0e2c44; color: #4a9eff; }
+.loan-banner__label--start    { background: #0e2c1a; color: #4caf50; }
+.loan-banner__label--progress { background: #1a1a2e; color: #9c6aff; }
+.loan-banner__label--completed { background: #0e2c1a; color: #4caf50; }
+.loan-banner__label--rejected  { background: #2e0e0e; color: #e57373; }
+
+.loan-banner__hint {
+    font-size: .8rem;
+    color: var(--color-text-muted, #8b92a8);
+    font-style: italic;
+}
+
+.loan-banner__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    align-items: center;
+}
+
+.loan-banner__propose-form,
+.loan-banner__reject-form {
+    display: contents;
+}
+
+.loan-banner__points-input {
+    width: 80px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border, rgba(255,255,255,.12));
+    background: var(--color-surface-3, #2a2f45);
+    color: var(--color-text, #e8eaf6);
+    font-size: .85rem;
+    text-align: center;
+}
+
+.loan-banner__btn-row {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.loan-banner__waiting {
+    font-size: .82rem;
+    color: var(--color-text-muted, #8b92a8);
+    font-style: italic;
+}
+
+.loan-banner__handshake {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.loan-banner__handshake-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: .85rem;
+}
+
+.loan-banner__handshake-user {
+    font-weight: 600;
+}
+
+.loan-banner__check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    flex-shrink: 0;
+}
+.loan-banner__check--done    { background: #4caf50; color: #fff; }
+.loan-banner__check--pending { background: var(--color-surface-3, #2a2f45); color: var(--color-text-muted, #8b92a8); border: 1px solid currentColor; }
+
+.loan-banner__reject-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted, #8b92a8);
+    font-size: .78rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
+.loan-banner__reject-btn:hover { color: #e57373; }
+
+/* Borrow card loan button */
+.borrow-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.borrow-card__link {
+    display: flex;
+    gap: var(--spacing-sm);
+    text-decoration: none;
+    color: inherit;
+    padding: var(--spacing-sm);
+    flex: 1;
+}
+
+.borrow-card__loan-form {
+    padding: 0 var(--spacing-sm) var(--spacing-sm);
+}
+
+.borrow-card__loan-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.borrow-card__loan-cost {
+    opacity: .7;
+    font-size: .8em;
+}
+

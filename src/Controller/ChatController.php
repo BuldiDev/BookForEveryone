@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Repository\ConversationRepository;
+use App\Repository\LoanRequestRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -62,6 +63,7 @@ class ChatController extends AbstractController
     public function show(
         Conversation $conversation,
         MessageRepository $messageRepo,
+        LoanRequestRepository $loanRepo,
     ): Response {
         $me = $this->getUser();
 
@@ -71,11 +73,35 @@ class ChatController extends AbstractController
 
         $messages = $messageRepo->findByConversation($conversation);
         $other = $conversation->getOtherParticipant($me);
+        $loanRequest = $loanRepo->findLatestByConversation($conversation);
 
         return $this->render('chat/show.html.twig', [
             'conversation' => $conversation,
             'messages' => $messages,
             'other' => $other,
+            'loanRequest' => $loanRequest,
+        ]);
+    }
+
+    #[Route('/{id}/loan-banner', name: 'app_chat_loan_banner', requirements: ['id' => '\d+'])]
+    public function loanBanner(
+        Conversation $conversation,
+        LoanRequestRepository $loanRepo,
+    ): Response {
+        $me = $this->getUser();
+
+        if (!$conversation->hasParticipant($me)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $loanRequest = $loanRepo->findLatestByConversation($conversation);
+        if (!$loanRequest) {
+            return new Response('');
+        }
+
+        return $this->render('chat/_loan_banner.html.twig', [
+            'loanRequest' => $loanRequest,
+            'me' => $me,
         ]);
     }
 

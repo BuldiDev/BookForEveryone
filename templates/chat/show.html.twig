@@ -24,8 +24,22 @@
         </a>
     </div>
 
-    {# Area messaggi - Turbo Stream via Mercure aggiorna questo container #}
+    {# ── Banner Prestito Fisso (se esiste una richiesta) ── #}
+    {% if loanRequest %}
+        <div id="loan-banner-wrapper"
+             data-loan-id="{{ loanRequest.id }}"
+             data-banner-url="{{ path('app_chat_loan_banner', {id: conversation.id}) }}">
+            {% include 'chat/_loan_banner.html.twig' with {loanRequest: loanRequest, me: app.user} %}
+        </div>
+    {% else %}
+        <div id="loan-banner-wrapper"
+             data-banner-url="{{ path('app_chat_loan_banner', {id: conversation.id}) }}">
+        </div>
+    {% endif %}
+
+    {# Turbo Stream sources: messaggi + aggiornamenti loan banner #}
     <turbo-stream-source src="{{ mercure('chat/conversation/' ~ conversation.id) }}"></turbo-stream-source>
+    <turbo-stream-source src="{{ mercure('chat/conversation/' ~ conversation.id ~ '/loan') }}"></turbo-stream-source>
 
     <div class="chat-messages" id="chat-messages" data-current-user-id="{{ app.user.id }}">
         <div class="chat-messages__list" id="messages-list">
@@ -89,6 +103,30 @@
             e.target.reset();
             e.target.querySelector('.chat-input-form__input')?.focus();
         });
+
+        // Ricarica banner prestito quando Mercure notifica un aggiornamento
+        const bannerWrapper = document.getElementById('loan-banner-wrapper');
+        const bannerUrl = bannerWrapper?.dataset.bannerUrl;
+
+        function reloadLoanBanner() {
+            if (!bannerUrl) return;
+            fetch(bannerUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.text())
+                .then(html => {
+                    if (bannerWrapper) bannerWrapper.innerHTML = html;
+                });
+        }
+
+        const bannerWrapperObserver = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                for (const node of m.addedNodes) {
+                    if (node.nodeType === 1 && node.dataset?.loanReload === 'true') {
+                        reloadLoanBanner();
+                    }
+                }
+            }
+        });
+        if (bannerWrapper) bannerWrapperObserver.observe(bannerWrapper, { childList: true });
     </script>
 {% endblock %}
 {% endblock %}

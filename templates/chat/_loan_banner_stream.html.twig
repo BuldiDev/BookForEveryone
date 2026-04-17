@@ -1,0 +1,9 @@
+{#
+  Turbo Stream Mercure: segnala al browser che il loan banner deve essere ricaricato.
+  Il JS nella pagina chat intercetta questa notifica e fa una fetch del partial.
+#}
+<turbo-stream action="replace" target="loan-banner-wrapper">
+    <template>
+        <div id="loan-banner-wrapper" data-loan-reload="true" data-loan-id="{{ loanRequest.id }}" data-loan-status="{{ loanRequest.status }}"></div>
+    </template>
+</turbo-stream>

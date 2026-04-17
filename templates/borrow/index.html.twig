@@ -33,7 +33,8 @@
                 </div>
             {% else %}
                 {% for item in nearbyBooks %}
-                    <a href="{{ path('app_book_show', {id: item.book.id}) }}" class="borrow-card" data-lat="{{ item.owner.latitude }}" data-lng="{{ item.owner.longitude }}">
+                    <div class="borrow-card" data-lat="{{ item.owner.latitude }}" data-lng="{{ item.owner.longitude }}" data-book-id="{{ item.book.id }}" data-owner-id="{{ item.owner.id }}">
+                        <a href="{{ path('app_book_show', {id: item.book.id}) }}" class="borrow-card__link">
                         <div class="borrow-card__cover">
                             {% if item.book.coverUrl %}
                                 <img src="{{ item.book.coverUrl }}" alt="{{ item.book.title }}">
@@ -50,7 +51,14 @@
                             </div>
                             <div class="borrow-card__distance">📍 {{ item.distance }} km</div>
                         </div>
-                    </a>
+                        </a>
+                        <form action="{{ path('app_loan_request_new', {bookId: item.book.id, ownerId: item.owner.id}) }}" method="post" class="borrow-card__loan-form">
+                            <input type="hidden" name="_token" value="{{ csrf_token('loan_request_new') }}">
+                            <button type="submit" class="btn btn--primary btn--sm borrow-card__loan-btn" title="Chiedi in prestito (1 Culture Point)">
+                                📖 Chiedi prestito <span class="borrow-card__loan-cost">-1 ✨</span>
+                            </button>
+                        </form>
+                    </div>
                 {% endfor %}
             {% endif %}
         </div>
@@ -114,6 +122,9 @@
             if (notice) notice.style.display = 'none';
         });
 
+        // CSRF token statico per le richieste di prestito (JS)
+        const loanCsrfToken = {{ csrf_token('loan_request_new')|json_encode|raw }};
+
         // Carica marker iniziali
         const initialBooks = {{ nearbyBooks|map(item => {
             bookId: item.book.id,
@@ -122,6 +133,7 @@
             coverUrl: item.book.coverUrl,
             ownerUsername: item.owner.username,
             ownerDisplayName: item.owner.displayName,
+            ownerId: item.owner.id,
             ownerLat: item.owner.latitude,
             ownerLng: item.owner.longitude,
             distance: item.distance
@@ -136,7 +148,11 @@
                         '<strong>' + item.title + '</strong><br>' +
                         '<em>' + item.author + '</em><br>' +
                         '<span style="color:#888;">da ' + item.ownerDisplayName + '</span><br>' +
-                        '<a href="/book/' + item.bookId + '" style="color:#4a9eff;">Vai al libro →</a>'
+                        '<a href="/book/' + item.bookId + '" style="color:#4a9eff;">Vai al libro →</a><br>' +
+                        '<form method="post" action="/loan-request/new/' + item.bookId + '/' + item.ownerId + '" style="margin-top:6px;">'
+                        + '<input type="hidden" name="_token" value="' + loanCsrfToken + '">'
+                        + '<button type="submit" style="cursor:pointer;padding:4px 10px;border-radius:6px;border:none;background:#4a9eff;color:#fff;font-size:.8rem;">📖 Chiedi prestito</button>'
+                        + '</form>'
                     );
                 }
             });
@@ -194,7 +210,8 @@
                 return;
             }
             list.innerHTML = books.map(item =>
-                '<a href="/book/' + item.bookId + '" class="borrow-card" data-lat="' + item.ownerLat + '" data-lng="' + item.ownerLng + '">'
+                '<div class="borrow-card" data-lat="' + item.ownerLat + '" data-lng="' + item.ownerLng + '" data-book-id="' + item.bookId + '" data-owner-id="' + item.ownerId + '">'
+                + '<a href="/book/' + item.bookId + '" class="borrow-card__link">'
                 + '<div class="borrow-card__cover">'
                 + (item.coverUrl ? '<img src="' + item.coverUrl + '" alt="' + item.title + '">' : '<div class="borrow-card__no-cover">📚</div>')
                 + '</div>'
@@ -204,6 +221,11 @@
                 + '<div class="borrow-card__owner"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg> ' + item.ownerDisplayName + '</div>'
                 + '<div class="borrow-card__distance">📍 ' + item.distance + ' km</div>'
                 + '</div></a>'
+                + '<form method="post" action="/loan-request/new/' + item.bookId + '/' + item.ownerId + '" class="borrow-card__loan-form">'
+                + '<input type="hidden" name="_token" value="' + loanCsrfToken + '">'
+                + '<button type="submit" class="btn btn--primary btn--sm borrow-card__loan-btn">📖 Chiedi prestito <span class="borrow-card__loan-cost">-1 ✨</span></button>'
+                + '</form>'
+                + '</div>'
             ).join('');
         }
 
