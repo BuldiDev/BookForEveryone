@@ -2,14 +2,17 @@
 
 ## Avvio Automatico
 
+### Prima volta (setup completo)
+
 ```bash
 docker-compose up -d --build
+.\setup-database.bat
 ```
 
-Poi esegui il setup del database:
+### Avvii successivi (database già pronto)
 
 ```bash
-.\setup-database.bat
+docker-compose up -d
 ```
 
 Apri http://localhost:8000
@@ -18,4 +21,6 @@ Apri http://localhost:8000
 - Username: `bookforeveryone`
 - Password: `prova`
 
-**Nota**: Gli utenti di test sono posizionati nell'area di Mazara del Vallo (Sicilia) per testare le funzionalità di geolocalizzazione.
+**Nota importante**: Il database è salvato in `docker/db/data/`. Quando condividi l'intera cartella del progetto, il database è già incluso e pronto all'uso!
+
+**Geolocalizzazione**: Gli utenti di test sono posizionati nell'area di Mazara del Vallo (Sicilia).

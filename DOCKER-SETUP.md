@@ -21,39 +21,49 @@ docker-compose --version
 
 ## Avvio Applicazione
 
-### Opzione 1: Script automatico (Consigliato)
+### Prima volta - Setup completo
 
-```powershell
-.\docker-manage.ps1
-```
-
-Seleziona l'opzione 1 per avviare tutti i servizi.
-
-### Opzione 2: Comandi manuali
-
-#### Prima volta (con build):
+1. Avvia i container:
 
 ```powershell
 docker-compose up -d --build
 ```
 
-#### Avvii successivi:
+2. Aspetta circa 40 secondi che il database si inizializzi completamente, poi esegui:
+
+```powershell
+.\setup-database.bat
+```
+
+Questo script:
+- Pulisce eventuali dati vecchi
+- Esegue le migrazioni del database
+- Carica i generi letterari
+- Crea 1000 utenti (incluso l'utente fisso `bookforeveryone`)
+- Crea 50 libri con copertine
+- Crea likes casuali
+- Posiziona tutti gli utenti nell'area di Mazara del Vallo
+
+### Avvii successivi - Database già pronto
+
+Se hai già eseguito il setup, basta:
 
 ```powershell
 docker-compose up -d
 ```
 
-#### Fermare i servizi:
+Il database è salvato in `docker/db/data/` e persiste tra i riavvii!
 
-```powershell
-docker-compose down
-```
+### Condivisione del progetto
 
-#### Riavviare i servizi:
+**Importante**: Quando condividi l'intera cartella del progetto (inclusa `docker/db/data/`), chi la riceve avrà il database già pronto! 
 
-```powershell
-docker-compose restart
-```
+Deve solo:
+1. Installare Docker Desktop
+2. Eseguire `docker-compose up -d`
+3. Aprire http://localhost:8000
+
+Nessun setup aggiuntivo richiesto! 🎉
 
 ## Accesso ai Servizi
 
