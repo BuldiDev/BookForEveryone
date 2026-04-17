@@ -6,7 +6,6 @@
     <title>{% block title %}BookForEveryone{% endblock %}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     {% block stylesheets %}{% endblock %}
-    {% block importmap %}{{ importmap('app') }}{% endblock %}
 </head>
 <body>
     {% block flash_messages %}
@@ -21,6 +20,8 @@
 
     {% block navbar %}{% endblock %}
 
-    {% block javascripts %}{% endblock %}
+    {% block javascripts %}
+        {% block importmap %}{{ importmap('app') }}{% endblock %}
+    {% endblock %}
 </body>
 </html>
