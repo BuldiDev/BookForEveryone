@@ -38,9 +38,12 @@ class FeedController extends AbstractController
             $seenBookIds = $feedHistory->getSeenBookIds($user);
             $books = $bookRepo->getBooksFromFollowedUsers($user, $page, 30, $seenBookIds);
 
-            if (empty($books) && !empty($seenBookIds)) {
+            if (count($books) < 30 && !empty($seenBookIds)) {
                 $feedHistory->resetHistory($user);
-                $books = $bookRepo->getBooksFromFollowedUsers($user, $page, 30);
+                $remaining = 30 - count($books);
+                $alreadyIds = array_map(fn($b) => $b->getId(), $books);
+                $extra = $bookRepo->getBooksFromFollowedUsers($user, 1, $remaining, $alreadyIds);
+                $books = array_merge($books, $extra);
             }
         } else {
             // Genera o recupera il seed dalla sessione (si rigenera ogni volta che visiti il feed)
@@ -50,9 +53,12 @@ class FeedController extends AbstractController
             $seenBookIds = $feedHistory->getSeenBookIds($user);
             $books = $bookRepo->getFeedForUser($user, $page, 30, $seed, $seenBookIds);
 
-            if (empty($books) && !empty($seenBookIds)) {
+            if (count($books) < 30 && !empty($seenBookIds)) {
                 $feedHistory->resetHistory($user);
-                $books = $bookRepo->getFeedForUser($user, $page, 30, $seed);
+                $remaining = 30 - count($books);
+                $alreadyIds = array_map(fn($b) => $b->getId(), $books);
+                $extra = $bookRepo->getFeedForUser($user, 1, $remaining, $seed, $alreadyIds);
+                $books = array_merge($books, $extra);
             }
         }
 
@@ -91,21 +97,31 @@ class FeedController extends AbstractController
         $seenBookIds = $feedHistory->getSeenBookIds($user);
 
         if ($section === 'seguiti') {
+            $seenBookIds = $feedHistory->getSeenBookIds($user);
             $books = $bookRepo->getBooksFromFollowedUsers($user, 1, 30, $seenBookIds);
 
-            if (empty($books) && !empty($seenBookIds)) {
+            // Se non bastano, resetta history e riempi
+            if (count($books) < 30 && !empty($seenBookIds)) {
                 $feedHistory->resetHistory($user);
-                $books = $bookRepo->getBooksFromFollowedUsers($user, 1, 30);
+                $remaining = 30 - count($books);
+                $alreadyIds = array_map(fn($b) => $b->getId(), $books);
+                $extra = $bookRepo->getBooksFromFollowedUsers($user, 1, $remaining, $alreadyIds);
+                $books = array_merge($books, $extra);
             }
         } else {
             // Usa lo stesso seed della sessione per mantenere l'ordine consistente
             $seed = $session->get('feed_seed', random_int(1, 999999));
 
+            $seenBookIds = $feedHistory->getSeenBookIds($user);
             $books = $bookRepo->getFeedForUser($user, 1, 30, $seed, $seenBookIds);
 
-            if (empty($books) && !empty($seenBookIds)) {
+            // Se non bastano, resetta history e riempi
+            if (count($books) < 30 && !empty($seenBookIds)) {
                 $feedHistory->resetHistory($user);
-                $books = $bookRepo->getFeedForUser($user, 1, 30, $seed);
+                $remaining = 30 - count($books);
+                $alreadyIds = array_map(fn($b) => $b->getId(), $books);
+                $extra = $bookRepo->getFeedForUser($user, 1, $remaining, $seed, $alreadyIds);
+                $books = array_merge($books, $extra);
             }
         }
 
@@ -128,7 +144,7 @@ class FeedController extends AbstractController
 
         return new JsonResponse([
             'html' => $html,
-            'hasMore' => count($books) === 30,
+            'hasMore' => !empty($books),
         ]);
     }
 }

@@ -135,77 +135,141 @@ document.addEventListener('click', (e) => {
 });
 
 // Feed: frecce navigazione su/giù e scroll infinito
-document.addEventListener('DOMContentLoaded', () => {
+let _feedScrollCleanup = null;
+
+function initFeedScroll() {
+    // Pulisci listener precedenti (evita duplicati con Turbo)
+    if (_feedScrollCleanup) {
+        _feedScrollCleanup();
+        _feedScrollCleanup = null;
+    }
+
     const feed = document.getElementById('feed');
-    const feedCenter = document.querySelector('.feed-center');
     const prevBtn = document.getElementById('feed-prev');
     const nextBtn = document.getElementById('feed-next');
 
-    if (feed && feedCenter && prevBtn && nextBtn) {
-        const getVisibleIndex = () => {
-            const items = feed.querySelectorAll('.feed-item');
-            if (!items.length) return 0;
-            const scrollTop = feedCenter.scrollTop;
-            const viewH = feedCenter.clientHeight;
-            let best = 0;
-            let bestDist = Infinity;
-            items.forEach((item, i) => {
-                const dist = Math.abs(item.offsetTop - scrollTop);
-                if (dist < bestDist) { bestDist = dist; best = i; }
-            });
-            return best;
-        };
+    if (!feed || !prevBtn || !nextBtn) return;
 
-        const scrollToIndex = (idx) => {
-            const items = feed.querySelectorAll('.feed-item');
-            if (idx < 0 || idx >= items.length) return;
-            feedCenter.scrollTo({ top: items[idx].offsetTop, behavior: 'smooth' });
-        };
+    const scrollContainer = feed;
 
-        nextBtn.addEventListener('click', () => scrollToIndex(getVisibleIndex() + 1));
-        prevBtn.addEventListener('click', () => scrollToIndex(getVisibleIndex() - 1));
-
-        // Scroll infinito (deduplicazione lato server via seenBookIds, no page param)
-        let isLoading = false;
-        let hasMore = true;
-
-        feedCenter.addEventListener('scroll', () => {
-            if (isLoading || !hasMore) return;
-
-            const items = feed.querySelectorAll('.feed-item');
-            if (!items.length) return;
-
-            const lastItem = items[items.length - 1];
-            const rect = lastItem.getBoundingClientRect();
-            const feedRect = feedCenter.getBoundingClientRect();
-
-            // Carica quando l'ultimo item è vicino alla viewport
-            if (rect.top < feedRect.bottom + feedRect.height * 2) {
-                loadMoreBooks();
-            }
+    const getVisibleIndex = () => {
+        const items = feed.querySelectorAll('.feed-item');
+        if (!items.length) return 0;
+        const scrollTop = scrollContainer.scrollTop;
+        let best = 0;
+        let bestDist = Infinity;
+        items.forEach((item, i) => {
+            const dist = Math.abs(item.offsetTop - scrollTop);
+            if (dist < bestDist) { bestDist = dist; best = i; }
         });
+        return best;
+    };
 
-        async function loadMoreBooks() {
-            if (isLoading || !hasMore) return;
-            
-            isLoading = true;
+    const scrollToIndex = (idx) => {
+        const items = feed.querySelectorAll('.feed-item');
+        if (idx < 0 || idx >= items.length) return;
+        scrollContainer.scrollTo({ top: items[idx].offsetTop, behavior: 'smooth' });
+    };
 
-            try {
-                const section = feed.dataset.section || 'per-te';
-                const response = await fetch(`/feed/load-more?section=${section}`);
-                const data = await response.json();
+    const onPrev = () => scrollToIndex(getVisibleIndex() - 1);
+    const onNext = () => scrollToIndex(getVisibleIndex() + 1);
+    nextBtn.addEventListener('click', onNext);
+    prevBtn.addEventListener('click', onPrev);
 
-                if (data.html && data.html.trim()) {
-                    feed.insertAdjacentHTML('beforeend', data.html);
-                }
+    // Scroll infinito — carica in anticipo a metà batch
+    let isLoading = false;
+    let hasMore = true;
+    let batchStart = 0; // indice da cui inizia il batch corrente
+    let batchNum = 1;
+    let lastLoggedIndex = -1;
 
-                hasMore = data.hasMore;
-                isLoading = false;
-            } catch (error) {
-                console.error('Error loading more books:', error);
-                isLoading = false;
-            }
+    // Logga il libro corrente durante lo scroll
+    const logCurrentBook = () => {
+        const items = feed.querySelectorAll('.feed-item');
+        if (!items.length) return;
+        const scrollTop = scrollContainer.scrollTop;
+        const viewH = scrollContainer.clientHeight;
+        const center = scrollTop + viewH / 2;
+        let currentIdx = 0;
+        let bestDist = Infinity;
+        items.forEach((item, i) => {
+            const mid = item.offsetTop + item.offsetHeight / 2;
+            const dist = Math.abs(mid - center);
+            if (dist < bestDist) { bestDist = dist; currentIdx = i; }
+        });
+        if (currentIdx !== lastLoggedIndex) {
+            lastLoggedIndex = currentIdx;
+            const bookId = items[currentIdx].dataset.bookId || '?';
+            console.log(`📖 Libro ${currentIdx + 1}/${items.length} (id: ${bookId})`);
         }
+    };
+
+    const onScroll = () => {
+        logCurrentBook();
+
+        if (isLoading || !hasMore) return;
+
+        const items = feed.querySelectorAll('.feed-item');
+        if (!items.length) return;
+
+        // Trigger a metà del batch corrente
+        const batchSize = items.length - batchStart;
+        const triggerIdx = batchStart + Math.floor(batchSize / 2);
+        const triggerItem = items[Math.min(triggerIdx, items.length - 1)];
+
+        const rect = triggerItem.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+
+        if (rect.top < containerRect.bottom) {
+            loadMoreBooks();
+        }
+    };
+
+    scrollContainer.addEventListener('scroll', onScroll);
+
+    async function loadMoreBooks() {
+        if (isLoading || !hasMore) return;
+        
+        isLoading = true;
+        batchNum++;
+        console.log(`⏳ Caricamento batch #${batchNum}...`);
+
+        try {
+            const section = feed.dataset.section || 'per-te';
+            const beforeCount = feed.querySelectorAll('.feed-item').length;
+            const response = await fetch(`/feed/load-more?section=${section}`);
+            const data = await response.json();
+
+            if (data.html && data.html.trim()) {
+                feed.insertAdjacentHTML('beforeend', data.html);
+                batchStart = beforeCount; // il nuovo batch inizia dove finiva il precedente
+            }
+
+            const totalItems = feed.querySelectorAll('.feed-item').length;
+            console.log(`✅ Batch #${batchNum} — +${totalItems - beforeCount} libri, ${totalItems} totali`);
+
+            hasMore = data.hasMore;
+            isLoading = false;
+        } catch (error) {
+            console.error('Error loading more books:', error);
+            isLoading = false;
+        }
+    }
+
+    // Cleanup per Turbo
+    _feedScrollCleanup = () => {
+        scrollContainer.removeEventListener('scroll', onScroll);
+        nextBtn.removeEventListener('click', onNext);
+        prevBtn.removeEventListener('click', onPrev);
+    };
+}
+
+// Inizializza su turbo:load (copre sia primo caricamento che navigazioni Turbo)
+document.addEventListener('turbo:load', initFeedScroll);
+// Fallback se Turbo non è attivo
+document.addEventListener('DOMContentLoaded', () => {
+    if (!document.documentElement.hasAttribute('data-turbo-preview')) {
+        initFeedScroll();
     }
 });
 
