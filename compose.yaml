@@ -15,6 +15,8 @@ services:
       start_period: 60s
     volumes:
       - ./docker/db/data:/var/lib/mysql:rw
+    networks:
+      - bookforeveryone
 ###< doctrine/doctrine-bundle ###
 
 ###> symfony/mercure-bundle ###
@@ -30,6 +32,83 @@ services:
         anonymous
     ports:
       - "3000:3000"
+    networks:
+      - bookforeveryone
 ###< symfony/mercure-bundle ###
 
-# Note: Docker non installato. MariaDB è in esecuzione localmente come servizio Windows.
+###> redis ###
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - bookforeveryone
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+###< redis ###
+
+###> php/symfony ###
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    networks:
+      - bookforeveryone
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://bookforeveryone:bookforeveryone@database:3306/bookforeveryone?serverVersion=11.8.3-MariaDB&charset=utf8mb4
+      REDIS_URL: redis://redis:6379
+      MESSENGER_TRANSPORT_DSN: redis://redis:6379/messages
+      LOCK_DSN: redis://redis:6379
+      MERCURE_URL: http://mercure:3000/.well-known/mercure
+      MERCURE_PUBLIC_URL: http://localhost:3000/.well-known/mercure
+      MERCURE_JWT_SECRET: "BookForEveryoneMercureSecret2026!"
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+    networks:
+      - bookforeveryone
+
+  messenger:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php bin/console messenger:consume async -vv
+    volumes:
+      - .:/var/www
+    networks:
+      - bookforeveryone
+    depends_on:
+      - php
+      - redis
+    environment:
+      DATABASE_URL: mysql://bookforeveryone:bookforeveryone@database:3306/bookforeveryone?serverVersion=11.8.3-MariaDB&charset=utf8mb4
+      REDIS_URL: redis://redis:6379
+      MESSENGER_TRANSPORT_DSN: redis://redis:6379/messages
+###< php/symfony ###
+
+networks:
+  bookforeveryone:
+    driver: bridge
