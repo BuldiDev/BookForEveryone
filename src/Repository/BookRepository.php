@@ -8,14 +8,18 @@ use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * @extends ServiceEntityRepository<Book>
  */
 class BookRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private CacheInterface $cache,
+    ) {
         parent::__construct($registry, Book::class);
     }
 
@@ -104,35 +108,39 @@ class BookRepository extends ServiceEntityRepository
             return [];
         }
 
-        $conn = $this->getEntityManager()->getConnection();
+        $cacheKey = 'book_stats_' . md5(implode(',', $bookIds));
 
-        // Rating medi
-        $rows = $conn->executeQuery(
-            'SELECT book_id, ROUND(AVG(rating), 1) AS avg_rating FROM review WHERE book_id IN (:ids) GROUP BY book_id',
-            ['ids' => $bookIds],
-            ['ids' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
-        )->fetchAllAssociative();
+        return $this->cache->get($cacheKey, function (ItemInterface $item) use ($bookIds) {
+            $item->expiresAfter(60);
 
-        $stats = [];
-        foreach ($bookIds as $id) {
-            $stats[$id] = ['avg_rating' => null, 'likes_count' => 0];
-        }
-        foreach ($rows as $row) {
-            $stats[(int) $row['book_id']]['avg_rating'] = (float) $row['avg_rating'];
-        }
+            $conn = $this->getEntityManager()->getConnection();
 
-        // Likes count
-        $rows = $conn->executeQuery(
-            'SELECT book_id, COUNT(*) AS likes_count FROM user_book WHERE book_id IN (:ids) AND liked = 1 GROUP BY book_id',
-            ['ids' => $bookIds],
-            ['ids' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
-        )->fetchAllAssociative();
+            $rows = $conn->executeQuery(
+                'SELECT book_id, ROUND(AVG(rating), 1) AS avg_rating FROM review WHERE book_id IN (:ids) GROUP BY book_id',
+                ['ids' => $bookIds],
+                ['ids' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
+            )->fetchAllAssociative();
 
-        foreach ($rows as $row) {
-            $stats[(int) $row['book_id']]['likes_count'] = (int) $row['likes_count'];
-        }
+            $stats = [];
+            foreach ($bookIds as $id) {
+                $stats[$id] = ['avg_rating' => null, 'likes_count' => 0];
+            }
+            foreach ($rows as $row) {
+                $stats[(int) $row['book_id']]['avg_rating'] = (float) $row['avg_rating'];
+            }
 
-        return $stats;
+            $rows = $conn->executeQuery(
+                'SELECT book_id, COUNT(*) AS likes_count FROM user_book WHERE book_id IN (:ids) AND liked = 1 GROUP BY book_id',
+                ['ids' => $bookIds],
+                ['ids' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
+            )->fetchAllAssociative();
+
+            foreach ($rows as $row) {
+                $stats[(int) $row['book_id']]['likes_count'] = (int) $row['likes_count'];
+            }
+
+            return $stats;
+        });
     }
 
     /**

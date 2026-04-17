@@ -17,6 +17,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class BookController extends AbstractController
 {
@@ -25,6 +27,7 @@ class BookController extends AbstractController
         string $isbn,
         HttpClientInterface $httpClient,
         BookRepository $bookRepo,
+        CacheInterface $cache,
     ): JsonResponse {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
@@ -38,7 +41,10 @@ class BookController extends AbstractController
             ]);
         }
 
-        $bookData = $this->fetchBookDataFromApis($isbn, $httpClient);
+        $bookData = $cache->get('isbn_api_' . $isbn, function (ItemInterface $item) use ($isbn, $httpClient) {
+            $item->expiresAfter(86400);
+            return $this->fetchBookDataFromApis($isbn, $httpClient);
+        });
         
         if (!$bookData) {
             return new JsonResponse([

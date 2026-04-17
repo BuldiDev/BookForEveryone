@@ -18,6 +18,7 @@ services:
         bind:
             string $booksUploadDir: '%books_upload_dir%'
             string $booksUploadPath: '%books_upload_path%'
+            string $redisUrl: '%env(REDIS_URL)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name

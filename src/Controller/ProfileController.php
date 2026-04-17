@@ -112,6 +112,11 @@ class ProfileController extends AbstractController
 
         $em->flush();
 
+        // Invalida cache Redis per follow counts e following IDs
+        $userRepo->invalidateFollowingIds($currentUser);
+        $userRepo->invalidateProfileCounts($currentUser);
+        $userRepo->invalidateProfileCounts($targetUser);
+
         // Return JSON for AJAX requests
         if ($request->isXmlHttpRequest()) {
             return new JsonResponse([

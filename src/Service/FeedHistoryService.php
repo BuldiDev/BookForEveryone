@@ -9,9 +9,9 @@ class FeedHistoryService
 {
     private Client $redis;
 
-    public function __construct()
+    public function __construct(string $redisUrl)
     {
-        $this->redis = new Client($_ENV['REDIS_URL'] ?? 'tcp://localhost:6379');
+        $this->redis = new Client($redisUrl);
     }
 
     /**
