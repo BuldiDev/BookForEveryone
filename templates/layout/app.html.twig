@@ -28,6 +28,27 @@
                 <span>Profilo</span>
             </a>
         </nav>
+
+        {# Sezione Seguiti (stile YouTube) #}
+        {% if app.user.following is not empty %}
+        <div class="feed-sidebar__section">
+            <div class="feed-sidebar__section-title">Seguiti</div>
+            <div class="feed-sidebar__subscriptions">
+                {% for person in app.user.following %}
+                    <a href="{{ path('app_profile', {username: person.username}) }}" class="feed-sidebar__sub-link">
+                        {% if person.avatarUrl %}
+                            <img src="{{ person.avatarUrl }}" alt="{{ person.displayName }}" class="feed-sidebar__sub-avatar">
+                        {% else %}
+                            <div class="feed-sidebar__sub-avatar feed-sidebar__sub-avatar--placeholder">
+                                {{ person.displayName|first|upper }}
+                            </div>
+                        {% endif %}
+                        <span class="feed-sidebar__sub-name">{{ person.displayName }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </aside>
 
     {# Contenuto pagina #}

@@ -216,6 +216,70 @@ ul, ol {
     flex-shrink: 0;
 }
 
+/* --- Sezione Seguiti nella sidebar (stile YouTube) --- */
+.feed-sidebar__section {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.feed-sidebar__section-title {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0 var(--spacing-lg);
+    margin-bottom: var(--spacing-xs);
+}
+
+.feed-sidebar__subscriptions {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.feed-sidebar__sub-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 8px var(--spacing-lg);
+    color: var(--color-text-muted);
+    transition: background 0.15s, color 0.15s;
+    text-decoration: none;
+}
+
+.feed-sidebar__sub-link:hover {
+    background: #1e1e1e;
+    color: #fff;
+}
+
+.feed-sidebar__sub-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.feed-sidebar__sub-avatar--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+.feed-sidebar__sub-name {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* --- Area centrale: scroll verticale con cards --- */
 .feed-center {
     flex: 1;
@@ -223,9 +287,7 @@ ul, ol {
     flex-direction: column;
     align-items: center;
     position: relative;
-    overflow-y: scroll;
-    scroll-snap-type: y mandatory;
-    scrollbar-width: none;
+    min-width: 0;
 }
 
 .feed-center::-webkit-scrollbar {
@@ -234,12 +296,13 @@ ul, ol {
 
 /* --- Tab Seguiti / Per te --- */
 .feed-tabs {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
     display: flex;
+    justify-content: center;
     gap: var(--spacing-lg);
     padding: var(--spacing-md) var(--spacing-lg);
     background: linear-gradient(to bottom, rgba(15, 15, 15, 0.95) 60%, transparent);
@@ -267,7 +330,15 @@ ul, ol {
 
 .feed-scroll {
     width: 100%;
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+}
+
+.feed-scroll::-webkit-scrollbar {
+    display: none;
 }
 
 /* --- Singolo item del feed --- */
