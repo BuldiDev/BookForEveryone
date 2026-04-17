@@ -1,0 +1,3 @@
+# Mantiene la struttura della directory
+# Il contenuto di data/ non è tracciato da git (vedi .gitignore)
+# ma la struttura delle cartelle è preservata

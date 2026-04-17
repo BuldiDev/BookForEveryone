@@ -1,26 +1,46 @@
 # BookForEveryone
 
-## Avvio Automatico
+Piattaforma di condivisione libri con geolocalizzazione, chat real-time e sistema di prestiti.
 
-### Prima volta (setup completo)
+## Installazione
 
+1. Installa [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+2. Clona il progetto
+
+## Avvio
+
+**Prima volta:**
 ```bash
 docker-compose up -d --build
 .\setup-database.bat
 ```
 
-### Avvii successivi (database già pronto)
-
+**Avvii successivi:**
 ```bash
 docker-compose up -d
 ```
 
 Apri http://localhost:8000
 
-**Credenziali di test:**
+## Login
+
 - Username: `bookforeveryone`
 - Password: `prova`
 
-**Nota importante**: Il database è salvato in `docker/db/data/`. Quando condividi l'intera cartella del progetto, il database è già incluso e pronto all'uso!
+(Tutti gli utenti di test hanno password `prova`)
 
-**Geolocalizzazione**: Gli utenti di test sono posizionati nell'area di Mazara del Vallo (Sicilia).
+## Note
+
+- **Database**: Salvato in `docker/db/data/` - se condividi l'intera cartella, il database è già pronto!
+- **Fermare**: `docker-compose down`
+- **Reset DB**: `docker-compose down -v` poi `.\setup-database.bat`
+- **Utenti test**: 1000 utenti posizionati a Mazara del Vallo (Sicilia)
+- **Libri**: 50 libri con copertine da Open Library
+
+## Stack
+
+- Symfony 7 + PHP 8.4
+- MariaDB 11.8
+- Redis (cache/queue)
+- Mercure (real-time)
+- Docker

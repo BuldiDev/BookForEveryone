@@ -21,7 +21,7 @@
 .git
 .gitignore
 .dockerignore
-docker/db/data/
+docker/db/data/*
 node_modules/
 npm-debug.log
 .DS_Store

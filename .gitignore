@@ -18,3 +18,10 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> docker ###
+# Ignora solo il contenuto della cartella data, non la struttura
+/docker/db/data/*
+# Ma mantieni il README
+!/docker/db/data/.gitkeep
+###< docker ###
