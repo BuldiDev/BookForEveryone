@@ -68,6 +68,15 @@ Dopo l'avvio, i servizi saranno disponibili su:
   - Database: bookforeveryone
 - **Redis**: localhost:6379
 
+### Credenziali di Login
+
+Dopo aver eseguito `setup-database.bat`, usa queste credenziali per accedere:
+
+- **Username**: `bookforeveryone`
+- **Password**: `prova`
+
+Tutti gli altri utenti di test hanno la stessa password: `prova`
+
 ## Comandi Utili
 
 ### Visualizzare i logs

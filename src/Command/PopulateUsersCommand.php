@@ -140,6 +140,34 @@ class PopulateUsersCommand extends Command
             $usedUsernames[$eu->getUsername()] = true;
         }
 
+        // ── Utente fisso BookForEveryone ──
+        if (!isset($usedUsernames['bookforeveryone'])) {
+            $fixedUser = new User();
+            $fixedUser->setEmail('bookforeveryone@gmail.com');
+            $fixedUser->setUsername('bookforeveryone');
+            $fixedUser->setPassword($hashedPassword);
+            $fixedUser->setDisplayName('BookForEveryone');
+            $fixedUser->setIsVerified(true);
+            $fixedUser->setOnboardingCompleted(true);
+            $fixedUser->addCulturePoints(1000);
+            $fixedUser->setBio('Account ufficiale BookForEveryone 📚');
+            
+            // Posizione a Mazara del Vallo
+            $fixedUser->setLatitude(37.6544);
+            $fixedUser->setLongitude(12.5914);
+            
+            // Aggiungi tutti i generi
+            foreach ($genres as $genre) {
+                $fixedUser->addPreferredGenre($genre);
+            }
+            
+            $this->em->persist($fixedUser);
+            $users[] = $fixedUser;
+            $usedUsernames['bookforeveryone'] = true;
+            
+            $io->note('✓ Creato utente fisso: bookforeveryone / prova');
+        }
+
         for ($i = 0; $i < $count; $i++) {
             $firstName = self::FIRST_NAMES[array_rand(self::FIRST_NAMES)];
             $lastName = self::LAST_NAMES[array_rand(self::LAST_NAMES)];
