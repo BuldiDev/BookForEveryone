@@ -170,9 +170,22 @@ Su Windows, assicurati che Docker Desktop abbia accesso alla cartella del proget
 ## Note Importanti
 
 1. **Prima esecuzione**: Il primo avvio richiederà più tempo per scaricare le immagini Docker
-2. **Database**: I dati del database sono persistiti nella cartella `docker/db/data/`
-3. **Modifiche al codice**: Le modifiche al codice PHP sono immediatamente visibili (volume montato)
-4. **Modifiche al Dockerfile**: Richiedono un rebuild con `--build`
+2. **Database persistente**: I dati del database sono salvati in `docker/db/data/` e restano tra i riavvii
+3. **Copertine libri**: Le immagini dei libri sono in `public/uploads/books/` e vengono incluse nel progetto
+4. **Modifiche al codice**: Le modifiche al codice PHP sono immediatamente visibili (volume montato)
+5. **Modifiche al Dockerfile**: Richiedono un rebuild con `docker-compose up -d --build`
+6. **Condivisione progetto**: Quando condividi la cartella, includi `docker/db/data/` per avere il database già pronto
+7. **Reset database**: Esegui `.\setup-database.bat` per resettare e ripopolare il database
+
+## Dati Persistenti
+
+La cartella del progetto contiene:
+- `docker/db/data/` - Database MariaDB (~500MB con dati di test)
+- `public/uploads/books/` - Copertine dei libri scaricate
+- `var/cache/` - Cache di Symfony (può essere cancellata)
+- `var/log/` - Log dell'applicazione
+
+Quando condividi il progetto, questi dati vengono inclusi e chi riceve la cartella avrà tutto già pronto!
 
 ## Migrazioni Database
 
