@@ -161,9 +161,19 @@ Alla prima esecuzione, esegui le migrazioni:
 
 ```powershell
 docker-compose exec php php bin/console doctrine:migrations:migrate
+docker-compose exec php php bin/console doctrine:fixtures:load --append
 docker-compose exec php php bin/console app:populate-users
-docker-compose exec php php bin/console app:populate-books
+docker-compose exec php php bin/console app:populate-books 50
+docker-compose exec php php bin/console app:set-user-locations
 ```
+
+O semplicemente:
+
+```powershell
+.\setup-database.bat
+```
+
+**Nota**: Il comando `app:set-user-locations` posiziona tutti gli utenti nell'area di **Mazara del Vallo (Sicilia)** con una variazione casuale di ~20km, così potrai testare la funzionalità di prestito/scambio libri locali.
 
 ## Sviluppo
 

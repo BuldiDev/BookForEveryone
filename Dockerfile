@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -20,6 +20,9 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl opca
 
 # Install Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
+
+# Increase PHP memory limit
+RUN echo "memory_limit = 512M" > /usr/local/etc/php/conf.d/memory-limit.ini
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

@@ -14,7 +14,7 @@ services:
       retries: 5
       start_period: 60s
     volumes:
-      - ./docker/db/data:/var/lib/mysql:rw
+      - db_data:/var/lib/mysql
     networks:
       - bookforeveryone
 ###< doctrine/doctrine-bundle ###
@@ -112,3 +112,7 @@ services:
 networks:
   bookforeveryone:
     driver: bridge
+
+volumes:
+  db_data:
+    driver: local
