@@ -9,29 +9,29 @@ Piattaforma di condivisione libri con geolocalizzazione, chat real-time e sistem
 
 ## Avvio
 
-**Prima volta:**
-```bash
-docker-compose up -d --build
-.\setup-database.bat
-```
 
-**Avvii successivi:**
+**Avvio Test Università**
+
+**Test Università già pronto:**
 ```bash
 docker-compose up -d
 ```
+
+
 
 Apri http://localhost:8000
 
 ## Login
 
-- Username: `bookforeveryone`
-- Password: `prova`
+- Username:     `bookforeveryone`
+- Email:        `admin@bookforeveryone.it`
+- Password:     `prova`
 
 (Tutti gli utenti di test hanno password `prova`)
 
 ## Note
 
-- **Database**: Salvato in `docker/db/data/` - se condividi l'intera cartella, il database è già pronto!
+- **Database**: Salvato in `docker/db/data/`
 - **Fermare**: `docker-compose down`
 - **Reset DB**: `docker-compose down -v` poi `.\setup-database.bat`
 - **Utenti test**: 1000 utenti posizionati a Mazara del Vallo (Sicilia)
@@ -44,3 +44,13 @@ Apri http://localhost:8000
 - Redis (cache/queue)
 - Mercure (real-time)
 - Docker
+
+
+## -------------
+
+
+**Ricreare il database con utenti di prova e piattaforma**
+```bash
+docker-compose up -d --build
+.\setup-database.bat
+```
