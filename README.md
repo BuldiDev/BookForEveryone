@@ -24,7 +24,7 @@ Apri http://localhost:8000
 ## Login
 
 - Username:     `bookforeveryone`
-- Email:        `admin@bookforeveryone.it`
+- Email:        `bookforeveryone@gmail.com`
 - Password:     `prova`
 
 (Tutti gli utenti di test hanno password `prova`)

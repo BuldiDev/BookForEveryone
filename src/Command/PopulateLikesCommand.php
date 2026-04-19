@@ -57,6 +57,7 @@ class PopulateLikesCommand extends Command
         $io->info(sprintf('Trovati %d utenti e %d libri', count($users), count($books)));
 
         $totalLikes = 0;
+        $batchCount = 0;
         $io->progressStart(count($users));
 
         foreach ($users as $user) {
@@ -73,7 +74,7 @@ class PopulateLikesCommand extends Command
             foreach ($booksToLike as $book) {
                 // Trova o crea UserBook
                 $userBook = $this->userBookRepo->findOneBy(['user' => $user, 'book' => $book]);
-                
+
                 if (!$userBook) {
                     $userBook = $this->userBookRepo->findOrCreate($user, $book);
                 }
@@ -86,14 +87,10 @@ class PopulateLikesCommand extends Command
                 }
             }
 
-            // Flush ogni 100 utenti per performance
-            if ($totalLikes % 1000 === 0) {
+            // Flush ogni 100 utenti per performance (senza clear per evitare entità staccate)
+            $batchCount++;
+            if ($batchCount % 100 === 0) {
                 $this->em->flush();
-                $this->em->clear();
-                
-                // Ricarica gli oggetti per evitare problemi di memoria
-                $users = $this->userRepo->findAll();
-                $books = $this->bookRepo->findAll();
             }
 
             $io->progressAdvance();
