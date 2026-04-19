@@ -1,0 +1,73 @@
+{#
+  Loan action bar — fixed above the chat input.
+  Rendered server-side (personalized for current user).
+  Variables: loanRequest (LoanRequest), me (User)
+#}
+{% set lr = loanRequest %}
+{% set isRequester = lr.isRequester(me) %}
+{% set isOwner = lr.isOwner(me) %}
+{% set isMadeByMe = lr.isLastOfferByUser(me) %}
+{% set csrfToken = csrf_token('loan_action_' ~ lr.id) %}
+
+{% if lr.status == 'pending' and not isMadeByMe %}
+    {# ── Devo rispondere: Accetta / Controproposta / Rifiuta ── #}
+    <div class="loan-action-bar">
+        <div class="loan-action-bar__info">
+            <span class="loan-action-bar__label">{{ lr.lastOfferBy == 'requester' ? 'Offerta' : 'Controproposta' }} ricevuta</span>
+            <span class="loan-action-bar__points">{{ lr.offeredPoints }} CP</span>
+        </div>
+        <div class="loan-action-bar__buttons">
+            <form action="{{ path('app_loan_request_accept', {id: lr.id}) }}" method="post">
+                <input type="hidden" name="_token" value="{{ csrfToken }}">
+                <button type="submit" class="loan-btn loan-btn--accept">Accetta</button>
+            </form>
+
+            <form action="{{ path('app_loan_request_counter', {id: lr.id}) }}" method="post" class="loan-action-bar__counter-form">
+                <input type="hidden" name="_token" value="{{ csrfToken }}">
+                <input type="number" name="offered_points" min="1" max="999" value="{{ lr.offeredPoints }}" class="loan-action-bar__counter-input">
+                <button type="submit" class="loan-btn loan-btn--counter">Controproposta</button>
+            </form>
+
+            <form action="{{ path('app_loan_request_decline', {id: lr.id}) }}" method="post">
+                <input type="hidden" name="_token" value="{{ csrfToken }}">
+                <button type="submit" class="loan-btn loan-btn--decline">Rifiuta</button>
+            </form>
+        </div>
+    </div>
+
+{% elseif lr.status == 'pending' and isMadeByMe %}
+    {# ── In attesa di risposta ── #}
+    <div class="loan-action-bar loan-action-bar--waiting">
+        <div class="loan-action-bar__pulse"></div>
+        <span>In attesa di risposta…</span>
+    </div>
+
+{% elseif lr.status == 'accepted' %}
+    {# ── Conferma scambio / Annulla ── #}
+    {% set myConfirmed = isRequester ? lr.requesterConfirmed : lr.ownerConfirmed %}
+    <div class="loan-action-bar">
+        {% if not myConfirmed %}
+            <div class="loan-action-bar__info">
+                <span class="loan-action-bar__label">Accordo raggiunto</span>
+                <span class="loan-action-bar__points">{{ lr.offeredPoints }} CP</span>
+            </div>
+            <div class="loan-action-bar__buttons">
+                <form action="{{ path('app_loan_request_confirm_exchange', {id: lr.id}) }}" method="post">
+                    <input type="hidden" name="_token" value="{{ csrfToken }}">
+                    <button type="submit" class="loan-btn loan-btn--confirm">
+                        {{ isRequester ? 'Ho ricevuto il libro' : 'Ho dato il libro' }}
+                    </button>
+                </form>
+                <form action="{{ path('app_loan_request_cancel', {id: lr.id}) }}" method="post">
+                    <input type="hidden" name="_token" value="{{ csrfToken }}">
+                    <button type="submit" class="loan-btn loan-btn--cancel-link">Annulla</button>
+                </form>
+            </div>
+        {% else %}
+            <div class="loan-action-bar loan-action-bar--waiting">
+                <div class="loan-action-bar__pulse"></div>
+                <span>Hai confermato. In attesa dell'altro…</span>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}

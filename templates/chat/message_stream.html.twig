@@ -1,9 +1,16 @@
-{# Turbo Stream update: nuovo messaggio pubblicato via Mercure #}
+{# Turbo Stream: nuovo messaggio pubblicato via Mercure #}
 <turbo-stream action="append" target="messages-list">
     <template>
-        <div class="chat-bubble" id="message-{{ message.id }}" data-sender-id="{{ message.sender.id }}">
-            <div class="chat-bubble__content">{{ message.content }}</div>
-            <div class="chat-bubble__time">{{ message.createdAt|date('H:i') }}</div>
-        </div>
+        {% if message.type == 'text' %}
+            <div class="chat-bubble" id="message-{{ message.id }}" data-sender-id="{{ message.sender.id }}">
+                <div class="chat-bubble__content">{{ message.content }}</div>
+                <div class="chat-bubble__time">{{ message.createdAt|date('H:i') }}</div>
+            </div>
+        {% else %}
+            <div class="chat-loan-event" id="message-{{ message.id }}" data-sender-id="{{ message.sender.id }}" data-loan-event="true">
+                {% include 'chat/_loan_event_card.html.twig' with {message: message} %}
+                <div class="chat-loan-event__time">{{ message.createdAt|date('H:i') }}</div>
+            </div>
+        {% endif %}
     </template>
 </turbo-stream>

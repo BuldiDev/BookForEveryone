@@ -27,7 +27,7 @@ class LoanRequestRepository extends ServiceEntityRepository
             ->where('lr.conversation = :conv')
             ->andWhere('lr.status NOT IN (:terminal)')
             ->setParameter('conv', $conversation)
-            ->setParameter('terminal', [LoanRequest::STATUS_COMPLETED, LoanRequest::STATUS_REJECTED])
+            ->setParameter('terminal', [LoanRequest::STATUS_COMPLETED, LoanRequest::STATUS_DECLINED, LoanRequest::STATUS_CANCELLED])
             ->orderBy('lr.createdAt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
@@ -62,7 +62,7 @@ class LoanRequestRepository extends ServiceEntityRepository
             ->setParameter('req', $requester)
             ->setParameter('owner', $owner)
             ->setParameter('bookId', $bookId)
-            ->setParameter('terminal', [LoanRequest::STATUS_COMPLETED, LoanRequest::STATUS_REJECTED])
+            ->setParameter('terminal', [LoanRequest::STATUS_COMPLETED, LoanRequest::STATUS_DECLINED, LoanRequest::STATUS_CANCELLED])
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();

@@ -6,28 +6,26 @@ use App\Repository\LoanRequestRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Richiesta di prestito libro tra utenti.
+ * Richiesta di prestito libro tra utenti — stile Vinted.
  *
  * Flusso stati:
- *   pending      → Il richiedente ha aperto la richiesta (-1 cultura point)
- *   proposed     → Il proprietario ha proposto X punti cultura
- *   awaiting_start → Il richiedente ha accettato la proposta; in attesa che ENTRAMBI confermino "Inizio Scambio"
- *   in_progress  → Entrambi hanno confermato inizio; libro rimosso dalla mappa
- *   awaiting_end → Attesa che ENTRAMBI confermino "Fine Scambio"
- *   completed    → Scambio completato; punti trasferiti, libro rimosso definitivamente
- *   rejected     → Uno dei due ha rifiutato
+ *   pending   → C'è un'offerta attiva (da requester o owner). Chi NON ha fatto
+ *               l'ultima offerta può accettare, controproporre o rifiutare.
+ *   accepted  → Affare concluso; i due si accordano in chat per l'incontro.
+ *               Entrambi confermano lo scambio fisico (requesterConfirmed / ownerConfirmed).
+ *   completed → Scambio completato: punti trasferiti, libro rimosso dalla mappa.
+ *   declined  → Uno dei due ha rifiutato.
+ *   cancelled → Uno dei due ha annullato dopo l'accettazione.
  */
 #[ORM\Entity(repositoryClass: LoanRequestRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class LoanRequest
 {
-    public const STATUS_PENDING        = 'pending';
-    public const STATUS_PROPOSED       = 'proposed';
-    public const STATUS_AWAITING_START = 'awaiting_start';
-    public const STATUS_IN_PROGRESS    = 'in_progress';
-    public const STATUS_AWAITING_END   = 'awaiting_end';
-    public const STATUS_COMPLETED      = 'completed';
-    public const STATUS_REJECTED       = 'rejected';
+    public const STATUS_PENDING   = 'pending';
+    public const STATUS_ACCEPTED  = 'accepted';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_DECLINED  = 'declined';
+    public const STATUS_CANCELLED = 'cancelled';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -53,23 +51,20 @@ class LoanRequest
     #[ORM\Column(length: 20)]
     private string $status = self::STATUS_PENDING;
 
-    /** Punti proposti dal proprietario */
+    /** Punti dell'offerta attuale */
     #[ORM\Column(nullable: true)]
-    private ?int $proposedPoints = null;
+    private ?int $offeredPoints = null;
 
-    /** Conferme per "Inizio Scambio" */
-    #[ORM\Column]
-    private bool $requesterAcceptedStart = false;
+    /** Chi ha fatto l'ultima offerta: 'requester' o 'owner' */
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $lastOfferBy = null;
 
+    /** Conferma scambio fisico avvenuto */
     #[ORM\Column]
-    private bool $ownerAcceptedStart = false;
-
-    /** Conferme per "Fine Scambio" */
-    #[ORM\Column]
-    private bool $requesterAcceptedEnd = false;
+    private bool $requesterConfirmed = false;
 
     #[ORM\Column]
-    private bool $ownerAcceptedEnd = false;
+    private bool $ownerConfirmed = false;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -102,32 +97,35 @@ class LoanRequest
     public function getStatus(): string { return $this->status; }
     public function setStatus(string $status): static { $this->status = $status; return $this; }
 
-    public function getProposedPoints(): ?int { return $this->proposedPoints; }
-    public function setProposedPoints(?int $points): static { $this->proposedPoints = $points; return $this; }
+    public function getOfferedPoints(): ?int { return $this->offeredPoints; }
+    public function setOfferedPoints(?int $points): static { $this->offeredPoints = $points; return $this; }
 
-    public function isRequesterAcceptedStart(): bool { return $this->requesterAcceptedStart; }
-    public function setRequesterAcceptedStart(bool $v): static { $this->requesterAcceptedStart = $v; return $this; }
+    public function getLastOfferBy(): ?string { return $this->lastOfferBy; }
+    public function setLastOfferBy(?string $by): static { $this->lastOfferBy = $by; return $this; }
 
-    public function isOwnerAcceptedStart(): bool { return $this->ownerAcceptedStart; }
-    public function setOwnerAcceptedStart(bool $v): static { $this->ownerAcceptedStart = $v; return $this; }
+    public function isRequesterConfirmed(): bool { return $this->requesterConfirmed; }
+    public function setRequesterConfirmed(bool $v): static { $this->requesterConfirmed = $v; return $this; }
 
-    public function isRequesterAcceptedEnd(): bool { return $this->requesterAcceptedEnd; }
-    public function setRequesterAcceptedEnd(bool $v): static { $this->requesterAcceptedEnd = $v; return $this; }
-
-    public function isOwnerAcceptedEnd(): bool { return $this->ownerAcceptedEnd; }
-    public function setOwnerAcceptedEnd(bool $v): static { $this->ownerAcceptedEnd = $v; return $this; }
+    public function isOwnerConfirmed(): bool { return $this->ownerConfirmed; }
+    public function setOwnerConfirmed(bool $v): static { $this->ownerConfirmed = $v; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
 
-    /** L'utente corrente è il richiedente? */
     public function isRequester(User $user): bool { return $this->requester?->getId() === $user->getId(); }
-    /** L'utente corrente è il proprietario? */
     public function isOwner(User $user): bool { return $this->owner?->getId() === $user->getId(); }
 
-    /** Lo scambio è ancora attivo (non terminato né rifiutato) */
+    /** L'utente corrente è chi ha fatto l'ultima offerta? */
+    public function isLastOfferByUser(User $user): bool
+    {
+        if ($this->lastOfferBy === 'requester') return $this->isRequester($user);
+        if ($this->lastOfferBy === 'owner') return $this->isOwner($user);
+        return false;
+    }
+
+    /** Lo scambio è ancora attivo? */
     public function isActive(): bool
     {
-        return !in_array($this->status, [self::STATUS_COMPLETED, self::STATUS_REJECTED], true);
+        return !in_array($this->status, [self::STATUS_COMPLETED, self::STATUS_DECLINED, self::STATUS_CANCELLED], true);
     }
 }

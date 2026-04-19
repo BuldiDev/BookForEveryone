@@ -1,0 +1,9 @@
+{#
+  Turbo Stream: signal to reload the loan action bar.
+  Published via Mercure on the /loan topic.
+#}
+<turbo-stream action="replace" target="loan-action-bar-wrapper">
+    <template>
+        <div id="loan-action-bar-wrapper" data-loan-reload="true" data-loan-id="{{ loanRequest.id }}" data-loan-status="{{ loanRequest.status }}"></div>
+    </template>
+</turbo-stream>

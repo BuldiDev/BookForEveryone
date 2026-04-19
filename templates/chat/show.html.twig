@@ -1,4 +1,4 @@
-{# Conversazione singola con messaggi real-time via Mercure + Turbo Stream #}
+{# Conversazione — stile Vinted con eventi prestito inline #}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}Chat con {{ other.displayName }} — BookForEveryone{% endblock %}
@@ -24,29 +24,25 @@
         </a>
     </div>
 
-    {# ── Banner Prestito Fisso (se esiste una richiesta) ── #}
-    {% if loanRequest %}
-        <div id="loan-banner-wrapper"
-             data-loan-id="{{ loanRequest.id }}"
-             data-banner-url="{{ path('app_chat_loan_banner', {id: conversation.id}) }}">
-            {% include 'chat/_loan_banner.html.twig' with {loanRequest: loanRequest, me: app.user} %}
-        </div>
-    {% else %}
-        <div id="loan-banner-wrapper"
-             data-banner-url="{{ path('app_chat_loan_banner', {id: conversation.id}) }}">
-        </div>
-    {% endif %}
-
-    {# Turbo Stream sources: messaggi + aggiornamenti loan banner #}
+    {# Turbo Stream sources: messaggi + aggiornamenti loan #}
     <turbo-stream-source src="{{ mercure('chat/conversation/' ~ conversation.id) }}"></turbo-stream-source>
     <turbo-stream-source src="{{ mercure('chat/conversation/' ~ conversation.id ~ '/loan') }}"></turbo-stream-source>
 
+    {# ── Messaggi (testo + eventi prestito inline) ── #}
     <div class="chat-messages" id="chat-messages" data-current-user-id="{{ app.user.id }}">
         <div class="chat-messages__list" id="messages-list">
             {% for message in messages %}
                 {% include 'chat/_message.html.twig' with {message: message, me: app.user} %}
             {% endfor %}
         </div>
+    </div>
+
+    {# ── Action bar prestito (se c'è una richiesta attiva) ── #}
+    <div id="loan-action-bar-wrapper"
+         data-action-bar-url="{{ path('app_chat_loan_action_bar', {id: conversation.id}) }}">
+        {% if activeLoanRequest %}
+            {% include 'chat/_loan_action_bar.html.twig' with {loanRequest: activeLoanRequest, me: app.user} %}
+        {% endif %}
     </div>
 
     {# Form invio messaggio #}
@@ -71,7 +67,6 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
-        // Scroll automatico ai messaggi più recenti
         const chatContainer = document.getElementById('chat-messages');
         const currentUserId = chatContainer?.dataset.currentUserId;
 
@@ -80,13 +75,22 @@
         }
         scrollToBottom();
 
-        // Osserva nuovi messaggi aggiunti via Turbo Stream e correggi mine/theirs
+        // ── Osserva nuovi messaggi (testo + loan event) ──
         const list = document.getElementById('messages-list');
         if (list) {
             const observer = new MutationObserver((mutations) => {
                 for (const mutation of mutations) {
                     for (const node of mutation.addedNodes) {
-                        if (node.nodeType === 1 && node.classList.contains('chat-bubble')) {
+                        if (node.nodeType !== 1) continue;
+
+                        // Duplicate check (Mercure + redirect)
+                        if (node.id && document.querySelectorAll('[id="' + node.id + '"]').length > 1) {
+                            node.remove();
+                            continue;
+                        }
+
+                        // Mine/theirs per bolle testo
+                        if (node.classList.contains('chat-bubble')) {
                             const senderId = node.dataset.senderId;
                             node.classList.remove('chat-bubble--mine', 'chat-bubble--theirs');
                             node.classList.add(senderId === currentUserId ? 'chat-bubble--mine' : 'chat-bubble--theirs');
@@ -98,35 +102,35 @@
             observer.observe(list, { childList: true });
         }
 
-        // Reset form dopo invio
+        // ── Reset form dopo invio ──
         document.querySelector('.chat-input-form')?.addEventListener('turbo:submit-end', (e) => {
             e.target.reset();
             e.target.querySelector('.chat-input-form__input')?.focus();
         });
 
-        // Ricarica banner prestito quando Mercure notifica un aggiornamento
-        const bannerWrapper = document.getElementById('loan-banner-wrapper');
-        const bannerUrl = bannerWrapper?.dataset.bannerUrl;
+        // ── Ricarica action bar quando Mercure segnala un aggiornamento loan ──
+        const actionBarWrapper = document.getElementById('loan-action-bar-wrapper');
+        const actionBarUrl = actionBarWrapper?.dataset.actionBarUrl;
 
-        function reloadLoanBanner() {
-            if (!bannerUrl) return;
-            fetch(bannerUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        function reloadActionBar() {
+            if (!actionBarUrl) return;
+            fetch(actionBarUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(r => r.text())
                 .then(html => {
-                    if (bannerWrapper) bannerWrapper.innerHTML = html;
+                    if (actionBarWrapper) actionBarWrapper.innerHTML = html;
                 });
         }
 
-        const bannerWrapperObserver = new MutationObserver((mutations) => {
+        const actionBarObserver = new MutationObserver((mutations) => {
             for (const m of mutations) {
                 for (const node of m.addedNodes) {
                     if (node.nodeType === 1 && node.dataset?.loanReload === 'true') {
-                        reloadLoanBanner();
+                        reloadActionBar();
                     }
                 }
             }
         });
-        if (bannerWrapper) bannerWrapperObserver.observe(bannerWrapper, { childList: true });
+        if (actionBarWrapper) actionBarObserver.observe(actionBarWrapper, { childList: true });
     </script>
 {% endblock %}
 {% endblock %}

@@ -1,5 +1,12 @@
-{# Singolo messaggio nella chat #}
-<div class="chat-bubble {{ message.sender.id == me.id ? 'chat-bubble--mine' : 'chat-bubble--theirs' }}" id="message-{{ message.id }}" data-sender-id="{{ message.sender.id }}">
-    <div class="chat-bubble__content">{{ message.content }}</div>
-    <div class="chat-bubble__time">{{ message.createdAt|date('H:i') }}</div>
-</div>
+{# Singolo messaggio nella chat — testo o evento prestito #}
+{% if message.type == 'text' %}
+    <div class="chat-bubble {{ message.sender.id == me.id ? 'chat-bubble--mine' : 'chat-bubble--theirs' }}" id="message-{{ message.id }}" data-sender-id="{{ message.sender.id }}">
+        <div class="chat-bubble__content">{{ message.content }}</div>
+        <div class="chat-bubble__time">{{ message.createdAt|date('H:i') }}</div>
+    </div>
+{% else %}
+    <div class="chat-loan-event" id="message-{{ message.id }}" data-sender-id="{{ message.sender.id }}" data-loan-event="true">
+        {% include 'chat/_loan_event_card.html.twig' with {message: message} %}
+        <div class="chat-loan-event__time">{{ message.createdAt|date('H:i') }}</div>
+    </div>
+{% endif %}

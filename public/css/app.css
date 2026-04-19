@@ -2378,157 +2378,478 @@ ul, ol {
    18. LOAN REQUEST BANNER
 ======================================== */
 
-#loan-banner-wrapper {
-    flex-shrink: 0;
-}
+/* ═══════════════════════════════════════════════════
+   Loan events — inline cards in chat message flow
+   ═══════════════════════════════════════════════════ */
 
-.loan-banner {
-    background: var(--color-surface-2, #1e2130);
-    border-bottom: 1px solid var(--color-border, rgba(255,255,255,.08));
-    padding: var(--spacing-md) var(--spacing-lg);
+/* ── Loan event wrapper (centered in chat) ── */
+.chat-loan-event {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
 }
 
-.loan-banner__book {
+.chat-loan-event__time {
+    font-size: .68rem;
+    color: var(--color-text-muted, #8b92a8);
+    margin-top: 4px;
+}
+
+/* ── Loan card (generic) ── */
+.chat-loan-card {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: var(--color-surface-2, #1e2130);
+    border: 1px solid var(--color-border, rgba(255,255,255,.1));
+    max-width: 340px;
+    width: 100%;
 }
 
-.loan-banner__cover {
-    width: 44px;
-    height: 60px;
-    border-radius: 4px;
+.chat-loan-card__cover {
+    width: 40px;
+    height: 56px;
+    border-radius: 6px;
     object-fit: cover;
     flex-shrink: 0;
-    background: var(--color-surface-3, #2a2f45);
 }
 
-.loan-banner__book-info {
+.chat-loan-card__svg {
+    flex-shrink: 0;
+    opacity: .85;
+}
+
+.chat-loan-card__body {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
 }
 
-.loan-banner__book-title {
+.chat-loan-card__label {
+    font-size: .8rem;
     font-weight: 600;
-    font-size: .95rem;
+    color: var(--color-text, #e8eaf6);
+}
+
+.chat-loan-card__book {
+    font-weight: 400;
+    color: var(--color-text-muted, #8b92a8);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: .75rem;
+    margin-top: 1px;
+}
+
+.chat-loan-card__points {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.chat-loan-card__points-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-text, #e8eaf6);
+}
+
+.chat-loan-card__points-unit {
+    font-size: .7rem;
+    color: var(--color-text-muted, #8b92a8);
+    font-weight: 500;
+}
+
+.chat-loan-card__hint {
+    font-size: .72rem;
+    color: var(--color-text-muted, #8b92a8);
+    font-style: italic;
+    margin-top: 2px;
+}
+
+/* ── Card variants ── */
+.chat-loan-card--success {
+    background: rgba(76, 175, 80, .08);
+    border-color: rgba(76, 175, 80, .25);
+}
+.chat-loan-card--success .chat-loan-card__label {
+    color: #4caf50;
+}
+.chat-loan-card--success .chat-loan-card__svg {
+    color: #4caf50;
+}
+
+.chat-loan-card--info {
+    background: rgba(74, 158, 255, .06);
+    border-color: rgba(74, 158, 255, .2);
+}
+.chat-loan-card--info .chat-loan-card__label {
+    color: var(--color-primary, #4a9eff);
+}
+.chat-loan-card--info .chat-loan-card__svg {
+    color: var(--color-primary, #4a9eff);
+}
+
+.chat-loan-card--danger {
+    background: rgba(229, 115, 115, .06);
+    border-color: rgba(229, 115, 115, .2);
+}
+.chat-loan-card--danger .chat-loan-card__label {
+    color: #e57373;
+}
+
+.chat-loan-card--muted {
+    background: rgba(139, 146, 168, .06);
+    border-color: rgba(139, 146, 168, .15);
+}
+.chat-loan-card--muted .chat-loan-card__label {
+    color: var(--color-text-muted, #8b92a8);
+}
+
+/* ═══════════════════════════════════════════════════
+   Loan action bar — fixed above chat input
+   ═══════════════════════════════════════════════════ */
+
+#loan-action-bar-wrapper {
+    flex-shrink: 0;
+}
+
+.loan-action-bar {
+    background: var(--color-surface-2, #1e2130);
+    border-top: 1px solid var(--color-border, rgba(255,255,255,.08));
+    padding: 10px var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.loan-action-bar__info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.loan-action-bar__label {
+    font-size: .78rem;
+    color: var(--color-text-muted, #8b92a8);
+    font-weight: 500;
+}
+
+.loan-action-bar__points {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--color-text, #e8eaf6);
+}
+
+.loan-action-bar__buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.loan-action-bar__counter-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.loan-action-bar__counter-input {
+    width: 56px;
+    padding: 6px 8px;
+    background: var(--color-surface-3, #2a2f45);
+    border: 1px solid var(--color-border, rgba(255,255,255,.12));
+    border-radius: 8px;
+    color: var(--color-text, #e8eaf6);
+    font-size: .85rem;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+}
+.loan-action-bar__counter-input:focus {
+    border-color: var(--color-primary, #4a9eff);
+}
+.loan-action-bar__counter-input::-webkit-inner-spin-button,
+.loan-action-bar__counter-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.loan-action-bar__counter-input { -moz-appearance: textfield; }
+
+/* ── Waiting state ── */
+.loan-action-bar--waiting {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: .82rem;
+    color: var(--color-text-muted, #8b92a8);
+    font-style: italic;
+}
+
+.loan-action-bar__pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-primary, #4a9eff);
+    animation: loanPulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes loanPulse {
+    0%, 100% { opacity: .3; transform: scale(.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ── Action bar buttons ── */
+.loan-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: none;
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.loan-btn--accept {
+    background: #4caf50;
+    color: #fff;
+}
+.loan-btn--accept:hover { background: #43a047; }
+
+.loan-btn--counter {
+    background: var(--color-surface-3, #2a2f45);
+    color: var(--color-text, #e8eaf6);
+    border: 1px solid var(--color-border, rgba(255,255,255,.12));
+}
+.loan-btn--counter:hover { border-color: var(--color-primary, #4a9eff); color: var(--color-primary, #4a9eff); }
+
+.loan-btn--decline {
+    background: none;
+    color: var(--color-text-muted, #8b92a8);
+    font-size: .75rem;
+    font-weight: 400;
+    text-decoration: underline;
+    padding: 4px 8px;
+}
+.loan-btn--decline:hover { color: #e57373; }
+
+.loan-btn--confirm {
+    background: var(--color-primary, #4a9eff);
+    color: #fff;
+}
+.loan-btn--confirm:hover { background: #3d8ce6; }
+
+.loan-btn--cancel-link {
+    background: none;
+    color: var(--color-text-muted, #8b92a8);
+    font-size: .72rem;
+    text-decoration: underline;
+    padding: 2px 8px;
+}
+.loan-btn--cancel-link:hover { color: #e57373; }
+
+/* ── Borrow page: offer row in owner items ── */
+.owner-item__loan-form {
+    flex-shrink: 0;
+}
+
+/* ── Offer Modal ── */
+.offer-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity .2s;
+}
+.offer-modal-overlay--visible { opacity: 1; }
+
+.offer-modal {
+    background: var(--color-surface-2, #1e2130);
+    border: 1px solid var(--color-border, rgba(255,255,255,.1));
+    border-radius: 16px;
+    padding: var(--spacing-xl, 28px);
+    width: 90%;
+    max-width: 380px;
+    position: relative;
+    transform: translateY(20px) scale(.96);
+    transition: transform .2s;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.offer-modal-overlay--visible .offer-modal {
+    transform: translateY(0) scale(1);
+}
+
+.offer-modal__close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--color-text-muted, #8b92a8);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+}
+.offer-modal__close:hover { color: var(--color-text, #e8eaf6); }
+
+.offer-modal__book {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 10px);
+    margin-bottom: var(--spacing-md, 16px);
+}
+
+.offer-modal__book-cover {
+    width: 44px;
+    height: 60px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--color-surface-3, #2a2f45);
+}
+.offer-modal__book-cover--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+.offer-modal__book-title {
+    font-weight: 600;
+    font-size: .9rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-.loan-banner__book-author {
-    font-size: .8rem;
+.offer-modal__book-author {
+    font-size: .78rem;
     color: var(--color-text-muted, #8b92a8);
 }
 
-.loan-banner__status {
+.offer-modal__recipient {
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
-    font-size: .82rem;
-}
-
-.loan-banner__label {
-    font-weight: 700;
-    font-size: .7rem;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    padding: 2px 8px;
-    border-radius: 20px;
-    white-space: nowrap;
-}
-.loan-banner__label--pending  { background: #3b3400; color: #f5c400; }
-.loan-banner__label--proposed { background: #0e2c44; color: #4a9eff; }
-.loan-banner__label--start    { background: #0e2c1a; color: #4caf50; }
-.loan-banner__label--progress { background: #1a1a2e; color: #9c6aff; }
-.loan-banner__label--completed { background: #0e2c1a; color: #4caf50; }
-.loan-banner__label--rejected  { background: #2e0e0e; color: #e57373; }
-
-.loan-banner__hint {
-    font-size: .8rem;
-    color: var(--color-text-muted, #8b92a8);
-    font-style: italic;
-}
-
-.loan-banner__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-xs);
-    align-items: center;
-}
-
-.loan-banner__propose-form,
-.loan-banner__reject-form {
-    display: contents;
-}
-
-.loan-banner__points-input {
-    width: 80px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--color-border, rgba(255,255,255,.12));
-    background: var(--color-surface-3, #2a2f45);
-    color: var(--color-text, #e8eaf6);
+    gap: 6px;
+    margin-bottom: var(--spacing-lg, 20px);
     font-size: .85rem;
+}
+.offer-modal__to-label {
+    color: var(--color-text-muted, #8b92a8);
+}
+.offer-modal__to-name {
+    font-weight: 600;
+    color: var(--color-text, #e8eaf6);
+}
+
+.offer-modal__field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs, 6px);
+    margin-bottom: var(--spacing-lg, 20px);
+}
+
+.offer-modal__label {
+    font-size: .82rem;
+    color: var(--color-text-muted, #8b92a8);
     text-align: center;
 }
 
-.loan-banner__btn-row {
-    display: flex;
-    gap: var(--spacing-xs);
-}
-
-.loan-banner__waiting {
-    font-size: .82rem;
-    color: var(--color-text-muted, #8b92a8);
-    font-style: italic;
-}
-
-.loan-banner__handshake {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-}
-
-.loan-banner__handshake-row {
+.offer-modal__input-wrap {
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
-    font-size: .85rem;
+    gap: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--color-border, rgba(255,255,255,.12));
+    background: var(--color-surface-3, #2a2f45);
 }
 
-.loan-banner__handshake-user {
-    font-weight: 600;
-}
-
-.loan-banner__check {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .7rem;
-    flex-shrink: 0;
-}
-.loan-banner__check--done    { background: #4caf50; color: #fff; }
-.loan-banner__check--pending { background: var(--color-surface-3, #2a2f45); color: var(--color-text-muted, #8b92a8); border: 1px solid currentColor; }
-
-.loan-banner__reject-btn {
+.offer-modal__stepper {
+    width: 44px;
+    height: 48px;
     background: none;
     border: none;
-    color: var(--color-text-muted, #8b92a8);
-    font-size: .78rem;
+    color: var(--color-text, #e8eaf6);
+    font-size: 1.2rem;
+    font-weight: 700;
     cursor: pointer;
-    text-decoration: underline;
-    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+    user-select: none;
 }
-.loan-banner__reject-btn:hover { color: #e57373; }
+.offer-modal__stepper:hover { background: rgba(74,158,255,.1); }
+.offer-modal__stepper:active { background: rgba(74,158,255,.2); }
+
+.offer-modal__input {
+    width: 80px;
+    height: 48px;
+    background: none;
+    border: none;
+    border-left: 1px solid var(--color-border, rgba(255,255,255,.08));
+    border-right: 1px solid var(--color-border, rgba(255,255,255,.08));
+    color: var(--color-text, #e8eaf6);
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+}
+.offer-modal__input::-webkit-inner-spin-button,
+.offer-modal__input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.offer-modal__input { -moz-appearance: textfield; }
+
+.offer-modal__cp-hint {
+    font-size: .72rem;
+    color: var(--color-text-muted, #8b92a8);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.offer-modal__submit {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 12px;
+    border: none;
+    background: var(--color-primary, #4a9eff);
+    color: #fff;
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+}
+.offer-modal__submit:hover { background: #3d8ce6; transform: translateY(-1px); }
+.offer-modal__submit:active { transform: translateY(0); }
+
+/* ── Map popup offer button ── */
+.borrow-popup-offer-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    background: #4a9eff;
+    color: #fff;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+}
+.borrow-popup-offer-btn:hover { background: #3d8ce6; }
 
 /* Borrow card loan button */
 .borrow-card {

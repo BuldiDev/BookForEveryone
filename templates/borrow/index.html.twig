@@ -62,6 +62,32 @@
         </div>
     </div>
 </div>
+
+{# ── Modal offerta ── #}
+<div class="offer-modal-overlay" id="offer-modal" style="display:none;">
+    <div class="offer-modal">
+        <button type="button" class="offer-modal__close" id="offer-modal-close">&times;</button>
+        <div class="offer-modal__book" id="offer-modal-book"></div>
+        <div class="offer-modal__recipient">
+            <span class="offer-modal__to-label">Offerta a</span>
+            <span class="offer-modal__to-name" id="offer-modal-name"></span>
+        </div>
+        <div class="offer-modal__field">
+            <label class="offer-modal__label" for="offer-modal-points">Quanti Culture Points vuoi offrire?</label>
+            <div class="offer-modal__input-wrap">
+                <button type="button" class="offer-modal__stepper" id="offer-minus">−</button>
+                <input type="number" id="offer-modal-points" class="offer-modal__input" min="1" max="999" value="3">
+                <button type="button" class="offer-modal__stepper" id="offer-plus">+</button>
+            </div>
+            <span class="offer-modal__cp-hint">Culture Points</span>
+        </div>
+        <form id="offer-modal-form" method="post">
+            <input type="hidden" name="_token" id="offer-modal-token">
+            <input type="hidden" name="offered_points" id="offer-modal-points-hidden" value="3">
+            <button type="submit" class="offer-modal__submit">Invia offerta</button>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block javascripts %}
@@ -79,6 +105,7 @@
         const loanCsrfToken = {{ csrf_token('loan_request_new')|json_encode|raw }};
         let selectedBookId = null;
         let currentRadius = 25;
+        let currentBookData = null;
 
         function destroyMap() {
             if (map) { map.remove(); map = null; }
@@ -127,7 +154,7 @@
         function renderBookResult(book) {
             const cover = book.cover
                 ? '<img src="' + escapeHtml(book.cover) + '" alt="" class="borrow-result__cover">'
-                : '<div class="borrow-result__cover borrow-result__cover--placeholder">📚</div>';
+                : '<div class="borrow-result__cover borrow-result__cover--placeholder"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" opacity=".4"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg></div>';
             return '<div class="borrow-result" data-book-id="' + book.id + '">'
                 + cover
                 + '<div class="borrow-result__info">'
@@ -178,6 +205,7 @@
             fetch('/borrow/book/' + bookId + '/owners?lat=' + lat + '&lng=' + lng + '&radius=' + radius)
                 .then(r => r.json())
                 .then(data => {
+                    currentBookData = data.book;
                     renderBookDetail(data);
                     initMap();
                     addOwnerMarkers(data.owners, data.book);
@@ -189,7 +217,7 @@
             const owners = data.owners;
             const cover = book.cover
                 ? '<img src="' + escapeHtml(book.cover) + '" alt="" class="book-detail__cover">'
-                : '<div class="book-detail__cover book-detail__cover--placeholder">📚</div>';
+                : '<div class="book-detail__cover book-detail__cover--placeholder"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" opacity=".4"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg></div>';
 
             let html = '<button class="book-detail__back" id="back-to-results">'
                 + '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>'
@@ -217,7 +245,7 @@
                 html += '<div class="borrow-empty"><p>Nessuno vicino a te ha questo libro</p>'
                     + '<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Prova ad aumentare il raggio di ricerca o a cliccare sulla mappa per cambiare posizione.</p></div>';
             } else {
-                html += '<p class="borrow-results-count">👥 <strong>' + owners.length + ' ' + (owners.length === 1 ? 'persona' : 'persone') + '</strong> vicino a te</p>';
+                html += '<p class="borrow-results-count"><strong>' + owners.length + ' ' + (owners.length === 1 ? 'persona' : 'persone') + '</strong> vicino a te</p>';
                 html += '<div class="borrow-owners-list">';
                 owners.forEach(owner => {
                     html += renderOwnerItem(owner, data.book.id);
@@ -276,12 +304,14 @@
                 + '<a href="/profile/' + escapeHtml(owner.username) + '" class="owner-item__avatar-link">' + avatar + '</a>'
                 + '<div class="owner-item__info">'
                 + '<a href="/profile/' + escapeHtml(owner.username) + '" class="owner-item__name">' + escapeHtml(owner.displayName) + '</a>'
-                + '<div class="owner-item__distance">📍 ' + owner.distance + ' km</div>'
+                + '<div class="owner-item__distance">' + owner.distance + ' km</div>'
                 + '</div>'
-                + '<form action="/loan-request/new/' + bookId + '/' + owner.userId + '" method="post" class="owner-item__loan-form">'
-                + '<input type="hidden" name="_token" value="' + loanCsrfToken + '">'
-                + '<button type="submit" class="btn btn--primary btn--sm owner-item__loan-btn">📖 Chiedi</button>'
-                + '</form></div>';
+                + '<button type="button" class="btn btn--primary btn--sm owner-item__loan-btn"'
+                + ' data-offer-book="' + bookId + '"'
+                + ' data-offer-owner="' + owner.userId + '"'
+                + ' data-offer-name="' + escapeHtml(owner.displayName) + '"'
+                + '>Fai un\'offerta</button>'
+                + '</div>';
         }
 
         // === MAPPA ===
@@ -353,9 +383,11 @@
                 if (owner.userLat && owner.userLng) {
                     const marker = L.marker([owner.userLat, owner.userLng]).addTo(markersLayer);
                     marker.bindPopup(
-                        '<strong>' + escapeHtml(owner.displayName) + '</strong><br>'
-                        + '<span style="color:#888;">📍 ' + owner.distance + ' km</span><br>'
-                        + '<a href="/profile/' + escapeHtml(owner.username) + '" style="color:#4a9eff;display:block;margin-top:6px;">Vai al profilo →</a>'
+                        '<div style="text-align:center;min-width:140px;">'
+                        + '<strong>' + escapeHtml(owner.displayName) + '</strong><br>'
+                        + '<span style="color:#888;font-size:.85rem;">' + owner.distance + ' km</span><br>'
+                        + '<button class="borrow-popup-offer-btn" data-offer-book="' + book.id + '" data-offer-owner="' + owner.userId + '" data-offer-name="' + escapeHtml(owner.displayName) + '">Fai un\'offerta</button>'
+                        + '</div>'
                     );
                 }
             });
@@ -380,6 +412,82 @@
         function init() {
             showStep('placeholder');
         }
+
+        // === OFFER MODAL ===
+        const modal = document.getElementById('offer-modal');
+        const modalClose = document.getElementById('offer-modal-close');
+        const modalForm = document.getElementById('offer-modal-form');
+        const modalPoints = document.getElementById('offer-modal-points');
+        const modalPointsHidden = document.getElementById('offer-modal-points-hidden');
+        const modalName = document.getElementById('offer-modal-name');
+        const modalToken = document.getElementById('offer-modal-token');
+        const modalBook = document.getElementById('offer-modal-book');
+        const minusBtn = document.getElementById('offer-minus');
+        const plusBtn = document.getElementById('offer-plus');
+
+        function openOfferModal(bookId, ownerId, ownerName) {
+            modalForm.action = '/loan-request/new/' + bookId + '/' + ownerId;
+            modalToken.value = loanCsrfToken;
+            modalName.textContent = ownerName;
+            modalPoints.value = 3;
+            modalPointsHidden.value = 3;
+
+            // Show book info in modal
+            if (currentBookData) {
+                const b = currentBookData;
+                const cover = b.cover
+                    ? '<img src="' + escapeHtml(b.cover) + '" class="offer-modal__book-cover">'
+                    : '<div class="offer-modal__book-cover offer-modal__book-cover--placeholder"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" opacity=".4"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg></div>';
+                modalBook.innerHTML = cover
+                    + '<div><div class="offer-modal__book-title">' + escapeHtml(b.title) + '</div>'
+                    + '<div class="offer-modal__book-author">' + escapeHtml(b.author) + '</div></div>';
+            }
+
+            modal.style.display = '';
+            requestAnimationFrame(() => {
+                modal.classList.add('offer-modal-overlay--visible');
+                modalPoints.focus();
+                modalPoints.select();
+            });
+        }
+
+        function closeOfferModal() {
+            modal.classList.remove('offer-modal-overlay--visible');
+            setTimeout(() => { modal.style.display = 'none'; }, 200);
+        }
+
+        modalClose.addEventListener('click', closeOfferModal);
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeOfferModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display !== 'none') closeOfferModal();
+        });
+
+        modalPoints.addEventListener('input', function() {
+            modalPointsHidden.value = this.value;
+        });
+        minusBtn.addEventListener('click', function() {
+            let v = parseInt(modalPoints.value) || 1;
+            if (v > 1) { modalPoints.value = v - 1; modalPointsHidden.value = v - 1; }
+        });
+        plusBtn.addEventListener('click', function() {
+            let v = parseInt(modalPoints.value) || 1;
+            if (v < 999) { modalPoints.value = v + 1; modalPointsHidden.value = v + 1; }
+        });
+
+        // Delegate clicks on offer buttons (sidebar + map popups)
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('[data-offer-book]');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            openOfferModal(
+                btn.dataset.offerBook,
+                btn.dataset.offerOwner,
+                btn.dataset.offerName
+            );
+        });
 
         document.addEventListener('DOMContentLoaded', init);
         document.addEventListener('turbo:load', init);

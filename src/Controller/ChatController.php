@@ -73,18 +73,18 @@ class ChatController extends AbstractController
 
         $messages = $messageRepo->findByConversation($conversation);
         $other = $conversation->getOtherParticipant($me);
-        $loanRequest = $loanRepo->findLatestByConversation($conversation);
+        $activeLoanRequest = $loanRepo->findActiveByConversation($conversation);
 
         return $this->render('chat/show.html.twig', [
             'conversation' => $conversation,
             'messages' => $messages,
             'other' => $other,
-            'loanRequest' => $loanRequest,
+            'activeLoanRequest' => $activeLoanRequest,
         ]);
     }
 
-    #[Route('/{id}/loan-banner', name: 'app_chat_loan_banner', requirements: ['id' => '\d+'])]
-    public function loanBanner(
+    #[Route('/{id}/loan-action-bar', name: 'app_chat_loan_action_bar', requirements: ['id' => '\d+'])]
+    public function loanActionBar(
         Conversation $conversation,
         LoanRequestRepository $loanRepo,
     ): Response {
@@ -94,13 +94,13 @@ class ChatController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $loanRequest = $loanRepo->findLatestByConversation($conversation);
-        if (!$loanRequest) {
+        $lr = $loanRepo->findActiveByConversation($conversation);
+        if (!$lr) {
             return new Response('');
         }
 
-        return $this->render('chat/_loan_banner.html.twig', [
-            'loanRequest' => $loanRequest,
+        return $this->render('chat/_loan_action_bar.html.twig', [
+            'loanRequest' => $lr,
             'me' => $me,
         ]);
     }

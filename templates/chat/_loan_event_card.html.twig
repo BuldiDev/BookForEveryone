@@ -1,0 +1,72 @@
+{#
+  Loan event card — rendered inside the message flow (centered).
+  Variables: message (Message)
+#}
+{% set meta = message.metadata ?? {} %}
+
+{% if message.type in ['loan_offer', 'loan_counter'] %}
+    <div class="chat-loan-card">
+        {% if meta.bookCover is defined and meta.bookCover %}
+            <img src="{{ meta.bookCover }}" class="chat-loan-card__cover" alt="">
+        {% endif %}
+        <div class="chat-loan-card__body">
+            <div class="chat-loan-card__label">
+                {{ message.type == 'loan_offer' ? 'Offerta' : 'Controproposta' }}
+                {% if meta.bookTitle is defined %}
+                    <span class="chat-loan-card__book">{{ meta.bookTitle }}</span>
+                {% endif %}
+            </div>
+            <div class="chat-loan-card__points">
+                <span class="chat-loan-card__points-value">{{ meta.points ?? '?' }}</span>
+                <span class="chat-loan-card__points-unit">Culture Points</span>
+            </div>
+        </div>
+    </div>
+
+{% elseif message.type == 'loan_accepted' %}
+    <div class="chat-loan-card chat-loan-card--success">
+        <svg class="chat-loan-card__svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        <div class="chat-loan-card__body">
+            <div class="chat-loan-card__label">Offerta accettata!</div>
+            <div class="chat-loan-card__points">
+                <span class="chat-loan-card__points-value">{{ meta.points ?? '?' }}</span>
+                <span class="chat-loan-card__points-unit">Culture Points</span>
+            </div>
+            <div class="chat-loan-card__hint">Accordatevi per incontrarvi e scambiarvi il libro</div>
+        </div>
+    </div>
+
+{% elseif message.type == 'loan_confirm' %}
+    <div class="chat-loan-card chat-loan-card--info">
+        <svg class="chat-loan-card__svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        <div class="chat-loan-card__body">
+            <div class="chat-loan-card__label">{{ message.sender.displayName }} ha confermato lo scambio</div>
+        </div>
+    </div>
+
+{% elseif message.type == 'loan_completed' %}
+    <div class="chat-loan-card chat-loan-card--success">
+        <svg class="chat-loan-card__svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <div class="chat-loan-card__body">
+            <div class="chat-loan-card__label">Scambio completato!</div>
+            <div class="chat-loan-card__points">
+                <span class="chat-loan-card__points-value">{{ meta.points ?? '?' }}</span>
+                <span class="chat-loan-card__points-unit">Culture Points trasferiti</span>
+            </div>
+        </div>
+    </div>
+
+{% elseif message.type == 'loan_declined' %}
+    <div class="chat-loan-card chat-loan-card--danger">
+        <div class="chat-loan-card__body">
+            <div class="chat-loan-card__label">Offerta rifiutata</div>
+        </div>
+    </div>
+
+{% elseif message.type == 'loan_cancelled' %}
+    <div class="chat-loan-card chat-loan-card--muted">
+        <div class="chat-loan-card__body">
+            <div class="chat-loan-card__label">Scambio annullato</div>
+        </div>
+    </div>
+{% endif %}
