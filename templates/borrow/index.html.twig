@@ -9,142 +9,57 @@
 {% block page_content %}
 <div class="borrow-page">
     <div class="borrow-sidebar">
-        <h2 class="borrow-sidebar__title">Cerca libro da prendere in prestito</h2>
+        <h2 class="borrow-sidebar__title">Prendi in prestito</h2>
 
-        {# Campo di ricerca libro #}
-        <form action="{{ path('app_borrow') }}" method="get" class="borrow-search-form" id="search-form">
+        {# Campo di ricerca #}
+        <div class="borrow-search-form" id="search-form">
             <input 
                 type="text" 
-                name="q" 
                 class="borrow-search-input" 
-                placeholder="Es: Harry Potter, Il Signore degli Anelli..." 
-                value="{{ query }}"
+                placeholder="Cerca per titolo o autore..." 
                 id="search-input"
-                required
+                autocomplete="off"
                 autofocus
             >
-            <button type="submit" class="borrow-search-btn">
+            <button type="button" class="borrow-search-btn" id="search-btn">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                     <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
                 </svg>
             </button>
-        </form>
+        </div>
 
-        {% if query is empty %}
-            {# Stato iniziale: nessuna ricerca effettuata #}
-            <div class="borrow-empty" style="padding: var(--spacing-xl); text-align: center;">
+        {# Contenitore risultati / dettaglio #}
+        <div id="borrow-content">
+            {# Stato iniziale #}
+            <div class="borrow-empty" id="borrow-placeholder">
                 <svg viewBox="0 0 24 24" width="64" height="64" fill="var(--color-text-muted)" style="margin: 0 auto var(--spacing-md);">
                     <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
                 </svg>
                 <h3 style="color: var(--color-text); margin-bottom: var(--spacing-sm);">Cerca un libro</h3>
                 <p style="color: var(--color-text-muted); font-size: var(--font-sm);">
-                    Inserisci il titolo del libro che vuoi prendere in prestito.<br>
-                    Ti mostreremo tutte le persone vicine a te che ce l'hanno!
+                    Inserisci il titolo o l'autore del libro che cerchi.<br>
+                    Poi selezionalo per vedere chi ce l'ha vicino a te!
                 </p>
             </div>
-        {% else %}
-            {# Risultati ricerca #}
-            <div class="borrow-controls">
-                <label class="borrow-label">Raggio di ricerca</label>
-                <div class="borrow-range-wrap">
-                    <input type="range" id="radius-slider" min="1" max="50" value="25" class="borrow-range">
-                    <span id="radius-value" class="borrow-range-val">25 km</span>
-                </div>
-            </div>
 
-            {% if not hasLocation %}
-                <div class="borrow-notice">
-                    <p>Non hai impostato la tua posizione. Clicca sulla mappa per scegliere dove cercare, oppure imposta la posizione nelle <a href="{{ path('app_settings') }}" style="color: var(--color-primary); font-weight: 600;">impostazioni</a>.</p>
-                </div>
-            {% endif %}
+            {# Lista risultati libri (step 1) #}
+            <div id="book-results" style="display:none;"></div>
 
-            <div class="borrow-list" id="borrow-list">
-                {% if nearbyBooks is empty %}
-                    <div class="borrow-empty">
-                        <p>Nessuno vicino a te ha "{{ query }}"</p>
-                        <p class="text-muted" style="font-size: .85rem; margin-top: 4px;">Prova ad aumentare il raggio di ricerca o a cercare un altro libro.</p>
-                    </div>
-                {% else %}
-                    <p style="color: var(--color-text-muted); font-size: var(--font-sm); margin-bottom: var(--spacing-md);">
-                        Trovati <strong style="color: var(--color-primary);">{{ nearbyBooks|length }} {{ nearbyBooks|length == 1 ? 'libro' : 'libri' }}</strong>
-                    </p>
-                    {% for item in nearbyBooks %}
-                    <div class="book-card-large" data-book-id="{{ item.book.id }}">
-                        {# Header del libro (sempre visibile) #}
-                        <div class="book-card-large__header" data-book-toggle="{{ item.book.id }}">
-                            <a href="{{ path('app_book_show', {id: item.book.id}) }}" class="book-card-large__cover-link" onclick="event.stopPropagation();">
-                                {% if item.book.coverUrl %}
-                                    <img src="{{ item.book.coverUrl }}" alt="{{ item.book.title }}" class="book-card-large__cover">
-                                {% else %}
-                                    <div class="book-card-large__cover book-card-large__cover--placeholder">📚</div>
-                                {% endif %}
-                            </a>
-                            <div class="book-card-large__info">
-                                <a href="{{ path('app_book_show', {id: item.book.id}) }}" class="book-card-large__title" onclick="event.stopPropagation();">
-                                    {{ item.book.title }}
-                                </a>
-                                <div class="book-card-large__author">{{ item.book.bookAuthor }}</div>
-                                <div class="book-card-large__meta">
-                                    <span class="book-card-large__owner-count">
-                                        👥 {{ item.owners|length }} {{ item.owners|length == 1 ? 'persona lo ha' : 'persone lo hanno' }}
-                                    </span>
-                                </div>
-                            </div>
-                            <button type="button" class="book-card-large__toggle" data-book-toggle="{{ item.book.id }}">
-                                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-                                    <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        {# Lista proprietari espandibile #}
-                        <div class="book-card-large__owners" id="owners-{{ item.book.id }}" style="display: none;">
-                            {% for owner in item.owners %}
-                                <div class="owner-item" data-lat="{{ owner.user.latitude }}" data-lng="{{ owner.user.longitude }}">
-                                    <a href="{{ path('app_profile', {username: owner.user.username}) }}" class="owner-item__avatar-link">
-                                        {% if owner.user.avatarUrl %}
-                                            <img src="{{ owner.user.avatarUrl }}" alt="{{ owner.user.displayName }}" class="owner-item__avatar">
-                                        {% else %}
-                                            <div class="owner-item__avatar owner-item__avatar--placeholder">
-                                                {{ owner.user.displayName|first|upper }}
-                                            </div>
-                                        {% endif %}
-                                    </a>
-                                    <div class="owner-item__info">
-                                        <a href="{{ path('app_profile', {username: owner.user.username}) }}" class="owner-item__name">
-                                            {{ owner.user.displayName }}
-                                        </a>
-                                        <div class="owner-item__distance">📍 {{ owner.distance }} km</div>
-                                    </div>
-                                    <form action="{{ path('app_loan_request_new', {bookId: item.book.id, ownerId: owner.user.id}) }}" method="post" class="owner-item__loan-form">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('loan_request_new') }}">
-                                        <button type="submit" class="btn btn--primary btn--sm owner-item__loan-btn">
-                                            📖 Chiedi
-                                        </button>
-                                    </form>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% endif %}
-            </div>
-        {% endif %}
+            {# Dettaglio libro con proprietari (step 2) #}
+            <div id="book-detail" style="display:none;"></div>
+        </div>
     </div>
 
     <div class="borrow-map-area">
-        {% if query is not empty %}
-            <div id="borrow-map" class="borrow-map"></div>
-        {% else %}
-            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--color-surface-3);">
-                <div style="text-align: center; color: var(--color-text-muted);">
-                    <svg viewBox="0 0 24 24" width="80" height="80" fill="currentColor" style="opacity: 0.3;">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                    </svg>
-                    <p style="margin-top: var(--spacing-md); font-size: var(--font-sm);">La mappa apparirà dopo la ricerca</p>
-                </div>
+        <div id="borrow-map" class="borrow-map" style="display:none;"></div>
+        <div id="map-placeholder" style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--color-surface-3);">
+            <div style="text-align: center; color: var(--color-text-muted);">
+                <svg viewBox="0 0 24 24" width="80" height="80" fill="currentColor" style="opacity: 0.3;">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                <p style="margin-top: var(--spacing-md); font-size: var(--font-sm);">Seleziona un libro per vedere chi ce l'ha vicino a te</p>
             </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -155,76 +70,226 @@
     <script>
     (function () {
         let map = null;
-        let markersLayer = null; // Definito globalmente
+        let markersLayer = null;
+        let radiusCircle = null;
+        let userMarker = null;
+        let searchLat = {{ userLat ?? 'null' }};
+        let searchLng = {{ userLng ?? 'null' }};
+        const hasLocation = {{ hasLocation ? 'true' : 'false' }};
+        const loanCsrfToken = {{ csrf_token('loan_request_new')|json_encode|raw }};
+        let selectedBookId = null;
+        let currentRadius = 25;
 
         function destroyMap() {
-            if (map) {
-                map.remove();
-                map = null;
-            }
+            if (map) { map.remove(); map = null; }
             markersLayer = null;
+            radiusCircle = null;
+            userMarker = null;
         }
 
-        // Funzione per attaccare i listener ai toggle (definita globalmente)
-        function attachToggleListeners() {
-            const toggles = document.querySelectorAll('[data-book-toggle]');
-            console.log('Attaching toggle listeners to', toggles.length, 'buttons');
-            
-            toggles.forEach((toggle, index) => {
-                // Rimuovi listener precedenti se esistono
-                toggle.replaceWith(toggle.cloneNode(true));
-            });
-            
-            // Riseleziona dopo il clone
-            document.querySelectorAll('[data-book-toggle]').forEach(toggle => {
-                toggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Toggle clicked for book', this.dataset.bookToggle);
-                    const bookId = this.dataset.bookToggle;
-                    const ownersDiv = document.getElementById('owners-' + bookId);
-                    if (ownersDiv) {
-                        const isVisible = ownersDiv.style.display !== 'none';
-                        ownersDiv.style.display = isVisible ? 'none' : 'block';
-                        this.classList.toggle('book-card-large__toggle--open', !isVisible);
-                        console.log('Toggled owners list for book', bookId, 'to', isVisible ? 'hidden' : 'visible');
-                    } else {
-                        console.error('Owners div not found for book', bookId);
-                    }
-                });
-            });
+        // === STEP 1: Ricerca libri ===
+        const searchInput = document.getElementById('search-input');
+        const bookResults = document.getElementById('book-results');
+        const bookDetail = document.getElementById('book-detail');
+        const placeholder = document.getElementById('borrow-placeholder');
+        const mapEl = document.getElementById('borrow-map');
+        const mapPlaceholder = document.getElementById('map-placeholder');
+        let searchTimer;
 
-            // Hover su owner → evidenzia marker (solo se esiste markersLayer)
-            if (markersLayer) {
-                document.querySelectorAll('.owner-item').forEach(ownerItem => {
-                    ownerItem.addEventListener('mouseenter', function() {
-                        const lat = parseFloat(this.dataset.lat);
-                        const lng = parseFloat(this.dataset.lng);
-                        markersLayer.eachLayer(m => {
-                            if (Math.abs(m.getLatLng().lat - lat) < 0.0001 && Math.abs(m.getLatLng().lng - lng) < 0.0001) {
-                                m.openPopup();
-                            }
-                        });
-                    });
-                });
-            }
+        function showStep(step) {
+            placeholder.style.display = step === 'placeholder' ? '' : 'none';
+            bookResults.style.display = step === 'results' ? '' : 'none';
+            bookDetail.style.display = step === 'detail' ? '' : 'none';
+            mapEl.style.display = step === 'detail' ? '' : 'none';
+            mapPlaceholder.style.display = step === 'detail' ? 'none' : '';
         }
 
-        function initBorrowMap() {
-            const mapEl = document.getElementById('borrow-map');
-            
-            // Attacca sempre i listener per i toggle, anche senza mappa
-            attachToggleListeners();
-            
-            if (!mapEl) {
+        function searchBooks(query) {
+            if (query.length < 2) {
+                showStep('placeholder');
                 return;
             }
+            fetch('/borrow/search-books?q=' + encodeURIComponent(query))
+                .then(r => r.json())
+                .then(books => {
+                    if (books.length === 0) {
+                        bookResults.innerHTML = '<div class="borrow-empty"><p>Nessun libro trovato per "' + escapeHtml(query) + '"</p></div>';
+                    } else {
+                        bookResults.innerHTML = '<p class="borrow-results-count">'
+                            + 'Trovati <strong>' + books.length + ' ' + (books.length === 1 ? 'libro' : 'libri') + '</strong></p>'
+                            + books.map(b => renderBookResult(b)).join('');
+                    }
+                    showStep('results');
+                    attachBookClickListeners();
+                });
+        }
 
-            if (map || mapEl._leaflet_id) destroyMap();
+        function renderBookResult(book) {
+            const cover = book.cover
+                ? '<img src="' + escapeHtml(book.cover) + '" alt="" class="borrow-result__cover">'
+                : '<div class="borrow-result__cover borrow-result__cover--placeholder">📚</div>';
+            return '<div class="borrow-result" data-book-id="' + book.id + '">'
+                + cover
+                + '<div class="borrow-result__info">'
+                + '<div class="borrow-result__title">' + escapeHtml(book.title) + '</div>'
+                + '<div class="borrow-result__author">' + escapeHtml(book.author) + '</div>'
+                + '</div>'
+                + '<svg class="borrow-result__arrow" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>'
+                + '</div>';
+        }
 
-            let searchLat = {{ userLat ?? 'null' }};
-            let searchLng = {{ userLng ?? 'null' }};
-            const hasLocation = {{ hasLocation ? 'true' : 'false' }};
+        function attachBookClickListeners() {
+            document.querySelectorAll('.borrow-result').forEach(el => {
+                el.addEventListener('click', function() {
+                    const bookId = parseInt(this.dataset.bookId);
+                    selectBook(bookId);
+                });
+            });
+        }
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            selectedBookId = null;
+            const q = this.value.trim();
+            searchTimer = setTimeout(() => searchBooks(q), 300);
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimer);
+                searchBooks(this.value.trim());
+            }
+        });
+
+        // === STEP 2: Dettaglio libro con proprietari ===
+        function selectBook(bookId) {
+            selectedBookId = bookId;
+            const lat = searchLat ?? 0;
+            const lng = searchLng ?? 0;
+
+            bookDetail.innerHTML = '<div class="borrow-loading">Caricamento...</div>';
+            showStep('detail');
+
+            loadOwners(bookId, lat, lng, currentRadius);
+        }
+
+        function loadOwners(bookId, lat, lng, radius) {
+            fetch('/borrow/book/' + bookId + '/owners?lat=' + lat + '&lng=' + lng + '&radius=' + radius)
+                .then(r => r.json())
+                .then(data => {
+                    renderBookDetail(data);
+                    initMap();
+                    addOwnerMarkers(data.owners, data.book);
+                });
+        }
+
+        function renderBookDetail(data) {
+            const book = data.book;
+            const owners = data.owners;
+            const cover = book.cover
+                ? '<img src="' + escapeHtml(book.cover) + '" alt="" class="book-detail__cover">'
+                : '<div class="book-detail__cover book-detail__cover--placeholder">📚</div>';
+
+            let html = '<button class="book-detail__back" id="back-to-results">'
+                + '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>'
+                + ' Torna ai risultati</button>';
+
+            html += '<div class="book-detail__header">'
+                + '<a href="/book/' + book.id + '">' + cover + '</a>'
+                + '<div class="book-detail__info">'
+                + '<a href="/book/' + book.id + '" class="book-detail__title">' + escapeHtml(book.title) + '</a>'
+                + '<div class="book-detail__author">' + escapeHtml(book.author) + '</div>'
+                + '</div></div>';
+
+            {% if not hasLocation %}
+            html += '<div class="borrow-notice"><p>Non hai impostato la tua posizione. Clicca sulla mappa per scegliere dove cercare, oppure imposta la posizione nelle <a href="{{ path('app_settings') }}" style="color:var(--color-primary);font-weight:600;">impostazioni</a>.</p></div>';
+            {% endif %}
+
+            html += '<div class="borrow-controls">'
+                + '<label class="borrow-label">Raggio di ricerca</label>'
+                + '<div class="borrow-range-wrap">'
+                + '<input type="range" id="radius-slider" min="1" max="100" value="' + currentRadius + '" class="borrow-range">'
+                + '<span id="radius-value" class="borrow-range-val">' + currentRadius + ' km</span>'
+                + '</div></div>';
+
+            if (owners.length === 0) {
+                html += '<div class="borrow-empty"><p>Nessuno vicino a te ha questo libro</p>'
+                    + '<p class="text-muted" style="font-size:.85rem;margin-top:4px;">Prova ad aumentare il raggio di ricerca o a cliccare sulla mappa per cambiare posizione.</p></div>';
+            } else {
+                html += '<p class="borrow-results-count">👥 <strong>' + owners.length + ' ' + (owners.length === 1 ? 'persona' : 'persone') + '</strong> vicino a te</p>';
+                html += '<div class="borrow-owners-list">';
+                owners.forEach(owner => {
+                    html += renderOwnerItem(owner, data.book.id);
+                });
+                html += '</div>';
+            }
+
+            bookDetail.innerHTML = html;
+
+            // Back button
+            document.getElementById('back-to-results').addEventListener('click', function() {
+                selectedBookId = null;
+                showStep('results');
+                destroyMap();
+            });
+
+            // Radius slider
+            const slider = document.getElementById('radius-slider');
+            if (slider) {
+                const radiusVal = document.getElementById('radius-value');
+                let sliderTimer;
+                slider.addEventListener('input', function() {
+                    currentRadius = parseInt(this.value);
+                    radiusVal.textContent = currentRadius + ' km';
+                    updateRadiusCircle(currentRadius);
+                    clearTimeout(sliderTimer);
+                    sliderTimer = setTimeout(() => {
+                        if (selectedBookId && searchLat !== null) {
+                            loadOwners(selectedBookId, searchLat, searchLng, currentRadius);
+                        }
+                    }, 400);
+                });
+            }
+
+            // Owner hover → evidenzia marker
+            document.querySelectorAll('.owner-item').forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    if (!markersLayer) return;
+                    const lat = parseFloat(this.dataset.lat);
+                    const lng = parseFloat(this.dataset.lng);
+                    markersLayer.eachLayer(m => {
+                        if (Math.abs(m.getLatLng().lat - lat) < 0.0001 && Math.abs(m.getLatLng().lng - lng) < 0.0001) {
+                            m.openPopup();
+                        }
+                    });
+                });
+            });
+        }
+
+        function renderOwnerItem(owner, bookId) {
+            const avatar = owner.avatarUrl
+                ? '<img src="' + escapeHtml(owner.avatarUrl) + '" alt="" class="owner-item__avatar">'
+                : '<div class="owner-item__avatar owner-item__avatar--placeholder">' + escapeHtml(owner.displayName.charAt(0).toUpperCase()) + '</div>';
+
+            return '<div class="owner-item" data-lat="' + owner.userLat + '" data-lng="' + owner.userLng + '">'
+                + '<a href="/profile/' + escapeHtml(owner.username) + '" class="owner-item__avatar-link">' + avatar + '</a>'
+                + '<div class="owner-item__info">'
+                + '<a href="/profile/' + escapeHtml(owner.username) + '" class="owner-item__name">' + escapeHtml(owner.displayName) + '</a>'
+                + '<div class="owner-item__distance">📍 ' + owner.distance + ' km</div>'
+                + '</div>'
+                + '<form action="/loan-request/new/' + bookId + '/' + owner.userId + '" method="post" class="owner-item__loan-form">'
+                + '<input type="hidden" name="_token" value="' + loanCsrfToken + '">'
+                + '<button type="submit" class="btn btn--primary btn--sm owner-item__loan-btn">📖 Chiedi</button>'
+                + '</form></div>';
+        }
+
+        // === MAPPA ===
+        function initMap() {
+            if (map) return; // già inizializzata
+
+            mapEl.style.display = '';
+            mapPlaceholder.style.display = 'none';
 
             const defaultLat = searchLat ?? 41.9028;
             const defaultLng = searchLng ?? 12.4964;
@@ -238,190 +303,86 @@
             ro.observe(mapEl);
             requestAnimationFrame(() => { if (map) map.invalidateSize(); });
 
-            let userMarker = null;
-
-            function setUserMarker(lat, lng) {
-                if (userMarker) map.removeLayer(userMarker);
-                userMarker = L.circleMarker([lat, lng], {
-                    radius: 8, fillColor: '#4a9eff', color: '#fff', weight: 2, fillOpacity: 0.9
-                }).addTo(map).bindPopup('Posizione di ricerca');
-                searchLat = lat;
-                searchLng = lng;
-            }
+            markersLayer = L.layerGroup().addTo(map);
 
             if (hasLocation) {
                 setUserMarker(searchLat, searchLng);
             }
 
-            markersLayer = L.layerGroup().addTo(map);
+            updateRadiusCircle(currentRadius);
 
-            map.on('click', function (e) {
-                setUserMarker(e.latlng.lat, e.latlng.lng);
+            map.on('click', function(e) {
+                searchLat = e.latlng.lat;
+                searchLng = e.latlng.lng;
+                setUserMarker(searchLat, searchLng);
                 map.setView(e.latlng, Math.max(map.getZoom(), 11));
+                updateRadiusCircle(currentRadius);
 
-                const radius = parseInt(document.getElementById('radius-slider').value);
-                const searchQuery = document.getElementById('search-input').value;
-                updateRadiusCircle(radius);
-                searchNearby(e.latlng.lat, e.latlng.lng, radius, searchQuery);
+                if (selectedBookId) {
+                    loadOwners(selectedBookId, searchLat, searchLng, currentRadius);
+                }
 
                 const notice = document.querySelector('.borrow-notice');
                 if (notice) notice.style.display = 'none';
             });
+        }
 
-            const loanCsrfToken = {{ csrf_token('loan_request_new')|json_encode|raw }};
+        function setUserMarker(lat, lng) {
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.circleMarker([lat, lng], {
+                radius: 8, fillColor: '#4a9eff', color: '#fff', weight: 2, fillOpacity: 0.9
+            }).addTo(map).bindPopup('La tua posizione');
+        }
 
-            const initialBooks = {{ nearbyBooks|map(item => {
-                bookId: item.book.id,
-                bookTitle: item.book.title,
-                bookAuthor: item.book.bookAuthor,
-                bookCover: item.book.coverUrl,
-                owners: item.owners|map(owner => {
-                    userId: owner.user.id,
-                    username: owner.user.username,
-                    displayName: owner.user.displayName,
-                    avatarUrl: owner.user.avatarUrl,
-                    userLat: owner.user.latitude,
-                    userLng: owner.user.longitude,
-                    distance: owner.distance
-                })
-            })|json_encode|raw }};
-
-            function addMarkers(books) {
-                markersLayer.clearLayers();
-                books.forEach(bookItem => {
-                    bookItem.owners.forEach(owner => {
-                        if (owner.userLat && owner.userLng) {
-                            const marker = L.marker([owner.userLat, owner.userLng]).addTo(markersLayer);
-                            marker.bindPopup(
-                                '<strong>' + owner.displayName + '</strong><br>' +
-                                '<span style="color:#888;">📍 ' + owner.distance + ' km</span><br>' +
-                                '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #444;">' +
-                                '<strong style="color:#4a9eff;">Ha: ' + bookItem.bookTitle + '</strong><br>' +
-                                '<em style="font-size:.85rem;color:#aaa;">' + bookItem.bookAuthor + '</em>' +
-                                '</div>' +
-                                '<a href="/profile/' + owner.username + '" style="color:#4a9eff;display:block;margin-top:6px;">Vai al profilo →</a>'
-                            );
-                        }
-                    });
-                });
-            }
-
-            addMarkers(initialBooks);
-
-            const slider = document.getElementById('radius-slider');
-            const radiusVal = document.getElementById('radius-value');
-            const searchInput = document.getElementById('search-input');
-            let radiusCircle = null;
-
-            function updateRadiusCircle(radius) {
-                if (radiusCircle) map.removeLayer(radiusCircle);
-                if (searchLat !== null && searchLng !== null) {
-                    radiusCircle = L.circle([searchLat, searchLng], {
-                        radius: radius * 1000,
-                        color: '#4a9eff',
-                        fillColor: '#4a9eff',
-                        fillOpacity: 0.05,
-                        weight: 1,
-                        interactive: false
-                    }).addTo(map);
-                }
-            }
-
-            function searchNearby(lat, lng, radius, query = '') {
-                if (!query || !query.trim()) {
-                    return;
-                }
-                const url = '/borrow/search?lat=' + lat + '&lng=' + lng + '&radius=' + radius + '&q=' + encodeURIComponent(query);
-                fetch(url)
-                    .then(r => r.json())
-                    .then(data => {
-                        addMarkers(data);
-                        updateBookList(data);
-                    });
-            }
-
-            updateRadiusCircle(parseInt(slider.value));
-
-            let searchTimer;
-            slider.addEventListener('input', function () {
-                const radius = parseInt(this.value);
-                radiusVal.textContent = radius + ' km';
-                updateRadiusCircle(radius);
-
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(() => {
-                    if (searchLat === null || searchLng === null) return;
-                    const query = searchInput.value.trim();
-                    if (query) {
-                        searchNearby(searchLat, searchLng, radius, query);
-                    }
-                }, 300);
-            });
-
-            // Ricerca dinamica
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(() => {
-                    if (searchLat === null || searchLng === null) return;
-                    const radius = parseInt(slider.value);
-                    const query = this.value.trim();
-                    if (query) {
-                        searchNearby(searchLat, searchLng, radius, query);
-                    }
-                }, 500);
-            });
-
-            function updateBookList(books) {
-                const list = document.getElementById('borrow-list');
-                if (books.length === 0) {
-                    list.innerHTML = '<div class="borrow-empty"><p>Nessun libro trovato.</p><p class="text-muted" style="font-size:.85rem;margin-top:4px;">Prova ad aumentare il raggio o modificare la ricerca.</p></div>';
-                    return;
-                }
-                
-                list.innerHTML = books.map(bookItem => {
-                    const cover = bookItem.bookCover
-                        ? '<img src="' + bookItem.bookCover + '" alt="' + bookItem.bookTitle + '" class="book-card-large__cover">'
-                        : '<div class="book-card-large__cover book-card-large__cover--placeholder">📚</div>';
-                    
-                    const ownersHtml = bookItem.owners.map(owner => {
-                        const avatar = owner.avatarUrl
-                            ? '<img src="' + owner.avatarUrl + '" alt="' + owner.displayName + '" class="owner-item__avatar">'
-                            : '<div class="owner-item__avatar owner-item__avatar--placeholder">' + owner.displayName.charAt(0).toUpperCase() + '</div>';
-                        
-                        return '<div class="owner-item" data-lat="' + owner.userLat + '" data-lng="' + owner.userLng + '">'
-                            + '<a href="/profile/' + owner.username + '" class="owner-item__avatar-link">' + avatar + '</a>'
-                            + '<div class="owner-item__info">'
-                            + '<a href="/profile/' + owner.username + '" class="owner-item__name">' + owner.displayName + '</a>'
-                            + '<div class="owner-item__distance">📍 ' + owner.distance + ' km</div>'
-                            + '</div>'
-                            + '<form action="/loan-request/new/' + bookItem.bookId + '/' + owner.userId + '" method="post" class="owner-item__loan-form">'
-                            + '<input type="hidden" name="_token" value="' + loanCsrfToken + '">'
-                            + '<button type="submit" class="btn btn--primary btn--sm owner-item__loan-btn">📖 Chiedi</button>'
-                            + '</form></div>';
-                    }).join('');
-                    
-                    return '<div class="book-card-large" data-book-id="' + bookItem.bookId + '">'
-                        + '<div class="book-card-large__header" data-book-toggle="' + bookItem.bookId + '">'
-                        + '<a href="/book/' + bookItem.bookId + '" class="book-card-large__cover-link" onclick="event.stopPropagation();">' + cover + '</a>'
-                        + '<div class="book-card-large__info">'
-                        + '<a href="/book/' + bookItem.bookId + '" class="book-card-large__title" onclick="event.stopPropagation();">' + bookItem.bookTitle + '</a>'
-                        + '<div class="book-card-large__author">' + bookItem.bookAuthor + '</div>'
-                        + '<div class="book-card-large__meta">'
-                        + '<span class="book-card-large__owner-count">👥 ' + bookItem.owners.length + ' ' + (bookItem.owners.length === 1 ? 'persona lo ha' : 'persone lo hanno') + '</span>'
-                        + '</div></div>'
-                        + '<button type="button" class="book-card-large__toggle" data-book-toggle="' + bookItem.bookId + '">'
-                        + '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>'
-                        + '</button></div>'
-                        + '<div class="book-card-large__owners" id="owners-' + bookItem.bookId + '" style="display:none;">' + ownersHtml + '</div>'
-                        + '</div>';
-                }).join('');
-
-                attachToggleListeners();
+        function updateRadiusCircle(radius) {
+            if (!map) return;
+            if (radiusCircle) map.removeLayer(radiusCircle);
+            if (searchLat !== null && searchLng !== null) {
+                radiusCircle = L.circle([searchLat, searchLng], {
+                    radius: radius * 1000,
+                    color: '#4a9eff', fillColor: '#4a9eff',
+                    fillOpacity: 0.05, weight: 1, interactive: false
+                }).addTo(map);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', initBorrowMap);
-        document.addEventListener('turbo:load', initBorrowMap);
+        function addOwnerMarkers(owners, book) {
+            if (!markersLayer) return;
+            markersLayer.clearLayers();
+            owners.forEach(owner => {
+                if (owner.userLat && owner.userLng) {
+                    const marker = L.marker([owner.userLat, owner.userLng]).addTo(markersLayer);
+                    marker.bindPopup(
+                        '<strong>' + escapeHtml(owner.displayName) + '</strong><br>'
+                        + '<span style="color:#888;">📍 ' + owner.distance + ' km</span><br>'
+                        + '<a href="/profile/' + escapeHtml(owner.username) + '" style="color:#4a9eff;display:block;margin-top:6px;">Vai al profilo →</a>'
+                    );
+                }
+            });
+
+            // Zoom to fit
+            if (owners.length > 0 && searchLat !== null) {
+                const allPoints = [[searchLat, searchLng]];
+                owners.forEach(o => { if (o.userLat && o.userLng) allPoints.push([o.userLat, o.userLng]); });
+                if (allPoints.length > 1) {
+                    map.fitBounds(allPoints, { padding: [40, 40], maxZoom: 13 });
+                }
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function init() {
+            showStep('placeholder');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('turbo:load', init);
         document.addEventListener('turbo:before-cache', destroyMap);
     })();
     </script>

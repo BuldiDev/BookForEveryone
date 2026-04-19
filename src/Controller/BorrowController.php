@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Repository\BookRepository;
 use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,104 +13,92 @@ use Symfony\Component\Routing\Attribute\Route;
 class BorrowController extends AbstractController
 {
     #[Route('/borrow', name: 'app_borrow')]
-    public function index(UserRepository $userRepo, Request $request): Response
+    public function index(): Response
     {
         $user = $this->getUser();
-        $nearbyBooks = [];
-        $userLat = $user->getLatitude();
-        $userLng = $user->getLongitude();
-        $search = trim($request->query->get('q', ''));
-
-        // Mostra risultati SOLO se c'è una query di ricerca
-        if ($search && $user->hasLocation()) {
-            $allBooks = $userRepo->findNearbyUsersWithBook(
-                $userLat, 
-                $userLng, 
-                25.0, 
-                $search, 
-                200
-            );
-            
-            // Filtra se stesso dagli owner
-            foreach ($allBooks as &$bookData) {
-                $bookData['owners'] = array_filter(
-                    $bookData['owners'], 
-                    fn($owner) => $owner['user']->getId() !== $user->getId()
-                );
-            }
-            
-            // Rimuovi libri senza proprietari disponibili
-            $nearbyBooks = array_filter($allBooks, fn($item) => count($item['owners']) > 0);
-        }
 
         return $this->render('borrow/index.html.twig', [
-            'nearbyBooks' => $nearbyBooks,
-            'query' => $search,
-            'userLat' => $userLat,
-            'userLng' => $userLng,
+            'userLat' => $user->getLatitude(),
+            'userLng' => $user->getLongitude(),
             'hasLocation' => $user->hasLocation(),
         ]);
     }
 
-    #[Route('/borrow/search', name: 'app_borrow_search')]
-    public function search(Request $request, UserRepository $userRepo): JsonResponse
+    /** Step 1: ricerca libri per titolo/autore (senza geolocalizzazione) */
+    #[Route('/borrow/search-books', name: 'app_borrow_search_books')]
+    public function searchBooks(Request $request, BookRepository $bookRepo): JsonResponse
     {
-        $lat = $request->query->get('lat');
-        $lng = $request->query->get('lng');
-        $radius = $request->query->get('radius', 25);
-        $searchQuery = trim($request->query->get('q', ''));
-
-        if (!$lat || !$lng || !$searchQuery) {
+        $q = trim($request->query->get('q', ''));
+        if (strlen($q) < 2) {
             return new JsonResponse([]);
         }
 
-        $lat = (float) $lat;
-        $lng = (float) $lng;
-        $radius = min(100, max(1, (float) $radius));
+        $books = $bookRepo->search($q, 30);
 
-        $results = $userRepo->findNearbyUsersWithBook(
-            $lat, 
-            $lng, 
-            $radius, 
-            $searchQuery, 
-            200
-        );
-        
-        // Filtra l'utente corrente dagli owner
-        $currentUserId = $this->getUser()->getId();
-        foreach ($results as &$bookData) {
-            $bookData['owners'] = array_filter(
-                $bookData['owners'], 
-                fn($owner) => $owner['user']->getId() !== $currentUserId
-            );
-        }
-        
-        // Rimuovi libri senza owner disponibili
-        $results = array_filter($results, fn($item) => count($item['owners']) > 0);
-
-        $data = [];
-        foreach ($results as $item) {
-            $book = $item['book'];
-            $data[] = [
-                'bookId' => $book->getId(),
-                'bookTitle' => $book->getTitle(),
-                'bookAuthor' => $book->getBookAuthor(),
-                'bookCover' => $book->getCoverUrl(),
-                'owners' => array_map(function($owner) {
-                    $user = $owner['user'];
-                    return [
-                        'userId' => $user->getId(),
-                        'username' => $user->getUsername(),
-                        'displayName' => $user->getDisplayName(),
-                        'avatarUrl' => $user->getAvatarUrl(),
-                        'userLat' => $user->getLatitude(),
-                        'userLng' => $user->getLongitude(),
-                        'distance' => $owner['distance'],
-                    ];
-                }, $item['owners'])
-            ];
-        }
+        $data = array_map(fn($b) => [
+            'id' => $b->getId(),
+            'title' => $b->getTitle(),
+            'author' => $b->getBookAuthor(),
+            'cover' => $b->getCoverUrl(),
+        ], $books);
 
         return new JsonResponse($data);
+    }
+
+    /** Step 2: dato un libro, trova i proprietari vicini */
+    #[Route('/borrow/book/{id}/owners', name: 'app_borrow_book_owners')]
+    public function bookOwners(int $id, Request $request, BookRepository $bookRepo, UserRepository $userRepo): JsonResponse
+    {
+        $user = $this->getUser();
+        $lat = (float) $request->query->get('lat', $user->getLatitude() ?? 0);
+        $lng = (float) $request->query->get('lng', $user->getLongitude() ?? 0);
+        $radius = min(100, max(1, (float) $request->query->get('radius', 25)));
+
+        if (!$lat && !$lng) {
+            return new JsonResponse([]);
+        }
+
+        $book = $bookRepo->find($id);
+        if (!$book) {
+            return new JsonResponse([], 404);
+        }
+
+        $results = $userRepo->findNearbyUsersWithBook($lat, $lng, $radius, $book->getTitle(), 200);
+
+        // Trova il risultato corrispondente al libro esatto
+        $owners = [];
+        foreach ($results as $item) {
+            if ($item['book']->getId() === $id) {
+                $owners = $item['owners'];
+                break;
+            }
+        }
+
+        // Filtra se stesso
+        $currentUserId = $user->getId();
+        $owners = array_values(array_filter(
+            $owners,
+            fn($o) => $o['user']->getId() !== $currentUserId
+        ));
+
+        $data = array_map(fn($o) => [
+            'userId' => $o['user']->getId(),
+            'username' => $o['user']->getUsername(),
+            'displayName' => $o['user']->getDisplayName(),
+            'avatarUrl' => $o['user']->getAvatarUrl(),
+            'userLat' => $o['user']->getLatitude(),
+            'userLng' => $o['user']->getLongitude(),
+            'distance' => $o['distance'],
+        ], $owners);
+
+        return new JsonResponse([
+            'book' => [
+                'id' => $book->getId(),
+                'title' => $book->getTitle(),
+                'author' => $book->getBookAuthor(),
+                'cover' => $book->getCoverUrl(),
+            ],
+            'owners' => $data,
+        ]);
     }
 }

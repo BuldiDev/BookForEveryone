@@ -24,6 +24,15 @@ RUN pecl install redis && docker-php-ext-enable redis
 # Increase PHP memory limit
 RUN echo "memory_limit = 512M" > /usr/local/etc/php/conf.d/memory-limit.ini
 
+# Optimize OPcache for Docker (avoid slow filesystem stat calls)
+RUN echo "opcache.memory_consumption=256\n\
+opcache.max_accelerated_files=20000\n\
+opcache.validate_timestamps=1\n\
+opcache.revalidate_freq=0\n\
+opcache.interned_strings_buffer=16\n\
+realpath_cache_size=4096K\n\
+realpath_cache_ttl=600" > /usr/local/etc/php/conf.d/opcache-perf.ini
+
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
