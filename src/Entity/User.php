@@ -58,6 +58,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private bool $onboardingCompleted = false;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isAdmin = false;
+
     #[ORM\Column(options: ['default' => 0])]
     private int $culturePoints = 0;
 
@@ -137,6 +140,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $roles = $this->roles;
         $roles[] = 'ROLE_USER';
+        if ($this->isAdmin) {
+            $roles[] = 'ROLE_ADMIN';
+        }
         return array_unique($roles);
     }
 
@@ -230,6 +236,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setOnboardingCompleted(bool $onboardingCompleted): static
     {
         $this->onboardingCompleted = $onboardingCompleted;
+        return $this;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->isAdmin;
+    }
+
+    public function setIsAdmin(bool $isAdmin): static
+    {
+        $this->isAdmin = $isAdmin;
         return $this;
     }
 

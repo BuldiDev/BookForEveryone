@@ -1,0 +1,179 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Statistiche Admin — BookForEveryone{% endblock %}
+
+{% block page_content %}
+<div class="admin-page">
+    <div class="admin-page__header">
+        <h1 class="admin-page__title">Statistiche</h1>
+        <p class="admin-page__subtitle">Panoramica della piattaforma</p>
+    </div>
+
+    {# ── Summary cards ── #}
+    <div class="admin-summary">
+        <div class="admin-summary__card">
+            <span class="admin-summary__value">{{ globalStats.total_books }}</span>
+            <span class="admin-summary__label">Libri</span>
+        </div>
+        <div class="admin-summary__card">
+            <span class="admin-summary__value">{{ globalStats.total_users }}</span>
+            <span class="admin-summary__label">Utenti</span>
+        </div>
+        <div class="admin-summary__card">
+            <span class="admin-summary__value">{{ globalStats.total_reviews }}</span>
+            <span class="admin-summary__label">Recensioni</span>
+        </div>
+        <div class="admin-summary__card">
+            <span class="admin-summary__value">{{ globalStats.total_loans }}</span>
+            <span class="admin-summary__label">Prestiti</span>
+        </div>
+    </div>
+
+    {# ── Charts ── #}
+    <div class="admin-charts">
+        <div class="admin-chart-card">
+            <h2 class="admin-chart-card__title">Top 10 — Valutazione media</h2>
+            <div class="admin-chart-card__wrap">
+                <canvas id="chartRating"></canvas>
+            </div>
+        </div>
+        <div class="admin-chart-card">
+            <h2 class="admin-chart-card__title">Top 10 — Like</h2>
+            <div class="admin-chart-card__wrap">
+                <canvas id="chartLikes"></canvas>
+            </div>
+        </div>
+        <div class="admin-chart-card">
+            <h2 class="admin-chart-card__title">Top 10 — Lettori</h2>
+            <div class="admin-chart-card__wrap">
+                <canvas id="chartReaders"></canvas>
+            </div>
+        </div>
+        <div class="admin-chart-card">
+            <h2 class="admin-chart-card__title">Top 10 — Recensioni</h2>
+            <div class="admin-chart-card__wrap">
+                <canvas id="chartReviews"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {# ── Table ── #}
+    <div class="admin-table-section">
+        <h2 class="admin-table-section__title">Tutti i libri</h2>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Copertina</th>
+                        <th>Titolo</th>
+                        <th>Autore</th>
+                        <th class="num">Voto</th>
+                        <th class="num">Like</th>
+                        <th class="num">Lettori</th>
+                        <th class="num">Recensioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book in bookStats %}
+                    <tr>
+                        <td>
+                            {% if book.cover_url %}
+                                <img src="{{ book.cover_url }}" alt="" class="admin-table__cover">
+                            {% else %}
+                                <div class="admin-table__cover admin-table__cover--placeholder">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="admin-table__title">
+                            <a href="{{ path('app_book_show', {id: book.id}) }}">{{ book.title }}</a>
+                        </td>
+                        <td class="admin-table__author">{{ book.book_author }}</td>
+                        <td class="num">
+                            {% if book.avg_rating %}
+                                <span class="admin-rating">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                    {{ book.avg_rating }}
+                                </span>
+                            {% else %}
+                                <span class="admin-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="num">{{ book.likes_count }}</td>
+                        <td class="num">{{ book.readers_count }}</td>
+                        <td class="num">{{ book.reviews_count }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" style="text-align:center; color: var(--color-text-muted); padding: var(--spacing-xl);">Nessun libro nel database</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const raw = {{ bookStats|json_encode|raw }};
+
+    const chartDefaults = {
+        type: 'bar',
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x } }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255,255,255,0.06)' },
+                    ticks: { color: '#8b8b8b', font: { size: 11 } }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: {
+                        color: '#e8e8e8',
+                        font: { size: 11 },
+                        callback: function (val) {
+                            const label = this.getLabelForValue(val);
+                            return label.length > 22 ? label.slice(0, 22) + '…' : label;
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    function top10(sorted, key) {
+        return sorted.slice(0, 10);
+    }
+
+    function makeChart(id, data, key, color) {
+        const sorted = [...data].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0)).slice(0, 10);
+        const labels  = sorted.map(b => b.title);
+        const values  = sorted.map(b => b[key] ?? 0);
+        new Chart(document.getElementById(id), {
+            ...chartDefaults,
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: color + 'cc',
+                    borderColor: color,
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            }
+        });
+    }
+
+    makeChart('chartRating',  raw, 'avg_rating',    '#f59e0b');
+    makeChart('chartLikes',   raw, 'likes_count',   '#e07a5f');
+    makeChart('chartReaders', raw, 'readers_count', '#4a9eff');
+    makeChart('chartReviews', raw, 'reviews_count', '#10b981');
+})();
+</script>
+{% endblock %}

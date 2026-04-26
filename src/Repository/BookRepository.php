@@ -196,6 +196,74 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
+     * Statistiche per libro per la dashboard admin.
+     * Usa subquery aggregate per evitare prodotto cartesiano review x user_book.
+     * @return array<int, array{id:int, title:string, book_author:string, cover_url:string|null, avg_rating:float|null, reviews_count:int, likes_count:int, readers_count:int}>
+     */
+    public function getAdminBookStats(): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = '
+            SELECT
+                b.id,
+                b.title,
+                b.book_author,
+                b.cover_url,
+                ROUND(r_agg.avg_rating, 1)          AS avg_rating,
+                COALESCE(r_agg.reviews_count, 0)    AS reviews_count,
+                COALESCE(ub_agg.likes_count, 0)     AS likes_count,
+                COALESCE(ub_agg.readers_count, 0)   AS readers_count
+            FROM book b
+            LEFT JOIN (
+                SELECT book_id,
+                       AVG(rating)  AS avg_rating,
+                       COUNT(*)     AS reviews_count
+                FROM review
+                GROUP BY book_id
+            ) r_agg ON r_agg.book_id = b.id
+            LEFT JOIN (
+                SELECT book_id,
+                       SUM(liked)    AS likes_count,
+                       SUM(has_read) AS readers_count
+                FROM user_book
+                GROUP BY book_id
+            ) ub_agg ON ub_agg.book_id = b.id
+            ORDER BY reviews_count DESC, likes_count DESC, b.title ASC
+        ';
+
+        $rows = $conn->executeQuery($sql)->fetchAllAssociative();
+
+        return array_map(static function (array $row): array {
+            return [
+                'id'            => (int) $row['id'],
+                'title'         => $row['title'],
+                'book_author'   => $row['book_author'],
+                'cover_url'     => $row['cover_url'],
+                'avg_rating'    => $row['avg_rating'] !== null ? (float) $row['avg_rating'] : null,
+                'reviews_count' => (int) $row['reviews_count'],
+                'likes_count'   => (int) $row['likes_count'],
+                'readers_count' => (int) $row['readers_count'],
+            ];
+        }, $rows);
+    }
+
+    /**
+     * Statistiche globali per la dashboard admin.
+     */
+    public function getGlobalStats(): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        return [
+            'total_books'   => (int) $conn->fetchOne('SELECT COUNT(*) FROM book'),
+            'total_users'   => (int) $conn->fetchOne('SELECT COUNT(*) FROM `user`'),
+            'total_reviews' => (int) $conn->fetchOne('SELECT COUNT(*) FROM review'),
+            'total_loans'   => (int) $conn->fetchOne('SELECT COUNT(*) FROM loan_request'),
+        ];
+    }
+
+    /**
      * Cerca libro esistente per titolo e autore (match approssimativo).
      * @return Book[]
      */
