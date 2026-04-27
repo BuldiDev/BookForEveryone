@@ -32,6 +32,8 @@ class BookController extends AbstractController
     ): JsonResponse {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
+        $isbn = preg_replace('/[^0-9X]/i', '', $isbn);
+
         // Verifica se esiste già nel DB
         $existing = $bookRepo->findByIsbn($isbn);
         if ($existing) {

@@ -21,7 +21,12 @@
       "Bash(mariadb -u root -proot -e \"SHOW DATABASES;\")",
       "PowerShell(Select-String -Pattern \"Hyper-V|virtualiz\" -CaseSensitive:$false 2>&1)",
       "PowerShell(Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\")",
-      "Bash(grep -n \"Admin sidebar link\\\\|Responsive admin\\\\|^$\" \"c:/Users/balda/Desktop/Codice/TESI/BookForEveryone/public/css/app.css\")"
+      "Bash(grep -n \"Admin sidebar link\\\\|Responsive admin\\\\|^$\" \"c:/Users/balda/Desktop/Codice/TESI/BookForEveryone/public/css/app.css\")",
+      "Bash(curl -s \"https://www.googleapis.com/books/v1/volumes?q=isbn:9788891293145\")",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s \"https://openlibrary.org/isbn/9788891293145.json\")",
+      "Bash(php bin/console cache:pool:clear cache.app)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }

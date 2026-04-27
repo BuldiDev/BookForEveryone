@@ -327,8 +327,8 @@ function initBookAddForm() {
 
     // ISBN search
     searchBtn.addEventListener('click', async () => {
-        const isbn = isbnInput.value.trim();
-        
+        const isbn = isbnInput.value.trim().replace(/[^0-9X]/gi, '');
+
         if (!isbn) {
             errorDiv.textContent = 'Inserisci un ISBN';
             errorDiv.style.display = 'block';
