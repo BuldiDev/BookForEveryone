@@ -108,6 +108,7 @@ ul, ol {
    4. LAYOUT APP (sidebar + contenuto)
    -------------------------------------------------------------------------- */
 
+/* Wrapper principale dell'app: sidebar + contenuto affiancati */
 .app-layout {
     display: flex;
     height: 100vh;
@@ -115,18 +116,20 @@ ul, ol {
     overflow: hidden;
 }
 
+/* Colonna contenuto: occupa lo spazio restante dopo la sidebar */
 .app-content {
     flex: 1;
     overflow-y: auto;
     height: 100vh;
 }
 
-/* Quando il contenuto è il feed o la pagina prestito, disabilita lo scroll di app-content */
+/* Disabilita lo scroll del wrapper quando il figlio gestisce il proprio scroll (feed, prestiti) */
 .app-content:has(.feed-area),
 .app-content:has(.borrow-page) {
     overflow: hidden;
 }
 
+/* Contenitore del feed: sidebar sinistra + area centrale + frecce navigazione */
 .feed-area {
     display: flex;
     height: 100vh;
@@ -300,6 +303,7 @@ ul, ol {
     border-bottom-color: #fff;
 }
 
+/* Scroll verticale con snap: ogni card occupa esattamente un'altezza schermo */
 .feed-scroll {
     width: 100%;
     height: 100vh;
@@ -323,6 +327,7 @@ ul, ol {
     scroll-snap-align: start;
 }
 
+/* Card libro nel feed: formato verticale tipo copertina con angoli arrotondati */
 .feed-card {
     position: relative;
     width: auto;
@@ -356,6 +361,7 @@ ul, ol {
     padding: var(--spacing-lg);
 }
 
+/* Overlay sfumato sul fondo della card: migliora la leggibilità di titolo e autore */
 .feed-card__overlay {
     position: absolute;
     bottom: 0;
@@ -404,6 +410,7 @@ ul, ol {
 }
 
 /* --- Azioni a destra della card --- */
+/* Colonna azioni verticale a destra della card (like, letto, possiedo, recensisci…) */
 .feed-actions {
     display: flex;
     flex-direction: column;
@@ -413,6 +420,7 @@ ul, ol {
     align-self: center;
 }
 
+/* Singolo bottone azione: icona circolare + etichetta testuale sotto */
 .feed-action {
     display: flex;
     flex-direction: column;
@@ -480,6 +488,7 @@ ul, ol {
 }
 
 /* Pannello recensione feed */
+/* Pannello inserimento recensione: scorre dal basso sopra la card con animazione */
 .feed-card__review-panel {
     position: absolute;
     bottom: 0;
@@ -664,6 +673,7 @@ ul, ol {
     margin: 0;
 }
 
+/* Pannello descrizione completa: si sovrappone alla card con fade-in quando aperto */
 .feed-card__description-panel {
     position: absolute;
     top: 0;
@@ -717,6 +727,7 @@ ul, ol {
     cursor: default;
 }
 
+/* Immagine profilo con badge "segui" sovrapposto — appare nella colonna azioni del feed */
 .feed-profile-pic {
     width: 52px;
     height: 52px;
@@ -745,6 +756,7 @@ ul, ol {
     color: white;
 }
 
+/* Bottone "+" sovrapposto alla foto profilo per seguire/smettere di seguire l'utente */
 .feed-follow-btn {
     position: absolute;
     bottom: -4px;
@@ -903,6 +915,7 @@ ul, ol {
    5. PANNELLO RECENSIONI
    -------------------------------------------------------------------------- */
 
+/* Pannello laterale scorrevole che mostra tutte le recensioni di un libro */
 .reviews-panel {
     position: fixed;
     top: 0;
@@ -937,6 +950,7 @@ ul, ol {
     font-weight: 700;
 }
 
+/* Singola recensione nel pannello laterale */
 .review-card {
     padding: var(--spacing-md) 0;
     border-bottom: 1px solid var(--color-border);
@@ -970,6 +984,7 @@ ul, ol {
    6. AUTENTICAZIONE (login, register)
    -------------------------------------------------------------------------- */
 
+/* Pagina login/registrazione: centra verticalmente la card nello schermo */
 .auth-page {
     min-height: 100vh;
     display: flex;
@@ -978,6 +993,7 @@ ul, ol {
     padding: var(--spacing-lg);
 }
 
+/* Card bianca (scura) che contiene il form di autenticazione */
 .auth-card {
     width: 100%;
     max-width: 400px;
@@ -999,6 +1015,7 @@ ul, ol {
    7. FORM
    -------------------------------------------------------------------------- */
 
+/* Gruppo label + campo di input nel form */
 .form-group {
     margin-bottom: var(--spacing-md);
 }
@@ -1011,6 +1028,7 @@ ul, ol {
     color: var(--color-text);
 }
 
+/* Campo di testo/select riutilizzabile: sfondo scuro con bordo che si illumina al focus */
 .form-control {
     width: 100%;
     padding: 10px 14px;
@@ -1028,6 +1046,7 @@ ul, ol {
     box-shadow: 0 0 0 3px rgba(61, 90, 128, 0.15);
 }
 
+/* Messaggio di errore di validazione sotto un campo */
 .form-error {
     font-size: var(--font-sm);
     color: var(--color-danger);
@@ -1114,6 +1133,7 @@ ul, ol {
    8. BOTTONI
    -------------------------------------------------------------------------- */
 
+/* Classe base bottone: flex per allineamento icona+testo, animazione al click */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -1236,6 +1256,7 @@ ul, ol {
    10. PROFILO
    -------------------------------------------------------------------------- */
 
+/* Sezione superiore della pagina profilo con avatar, nome e statistiche */
 .profile-header {
     text-align: center;
     padding: var(--spacing-2xl) var(--spacing-md);
@@ -1271,6 +1292,7 @@ ul, ol {
     margin-right: auto;
 }
 
+/* Riga statistiche sotto il profilo (libri, follower, following) */
 .profile-stats {
     display: flex;
     justify-content: center;
@@ -1304,12 +1326,14 @@ ul, ol {
 }
 
 /* Lista utenti (follower/following del profilo) */
+/* Lista verticale di utenti (follower / following) */
 .user-list {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
 }
 
+/* Singola riga utente nella lista follower/following */
 .user-list-item {
     display: flex;
     align-items: center;
@@ -1381,6 +1405,7 @@ ul, ol {
    11. BOOK CARD (per liste, profilo, risultati ricerca)
    -------------------------------------------------------------------------- */
 
+/* Griglia di card libro (profilo, ricerca, sezioni) */
 .book-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -1388,6 +1413,7 @@ ul, ol {
     padding: var(--spacing-md);
 }
 
+/* Singola card libro nella griglia */
 .book-card {
     background: var(--color-bg-card);
     border-radius: var(--radius-md);
@@ -1401,6 +1427,7 @@ ul, ol {
    -------------------------------------------------------------------------- */
 
 /* --- Badge punti cultura --- */
+/* Badge punti cultura: mostra il saldo CP corrente fisso in alto a destra */
 .culture-badge {
     position: fixed;
     top: 14px;
@@ -1425,12 +1452,14 @@ ul, ol {
     flex-shrink: 0;
 }
 
+/* Layout pagina prestiti: sidebar con lista + mappa Leaflet affiancate */
 .borrow-page {
     display: flex;
     height: 100vh;
     overflow: hidden;
 }
 
+/* Sidebar sinistra della pagina prestiti: filtri, ricerca e lista risultati */
 .borrow-sidebar {
     width: 380px;
     min-width: 320px;
@@ -1511,6 +1540,7 @@ ul, ol {
     position: relative;
 }
 
+/* Contenitore assoluto che ospita la mappa interattiva (Leaflet) */
 .borrow-map {
     position: absolute;
     top: 0;
@@ -1744,6 +1774,7 @@ ul, ol {
 }
 
 /* Book card large - mostra libro con lista proprietari */
+/* Card libro con lista proprietari espandibile (accordion) nella pagina prestiti */
 .book-card-large {
     background: var(--color-bg-card);
     border-radius: var(--radius-md);
@@ -1853,6 +1884,7 @@ ul, ol {
     gap: var(--spacing-sm);
 }
 
+/* Singola riga proprietario del libro con distanza e bottone richiesta prestito */
 .owner-item {
     display: flex;
     align-items: center;
@@ -2231,6 +2263,7 @@ ul, ol {
 }
 
 /* --- Pagina chat singola --- */
+/* Layout pagina chat singola: header fisso + area messaggi scrollabile + form invio */
 .chat-page {
     display: flex;
     flex-direction: column;
@@ -2302,6 +2335,7 @@ ul, ol {
 }
 
 /* --- Bubble messaggi --- */
+/* Bolla messaggio: dimensione massima 75% per non occupare tutta la riga */
 .chat-bubble {
     max-width: 75%;
     padding: var(--spacing-sm) var(--spacing-md);
@@ -2310,6 +2344,7 @@ ul, ol {
     position: relative;
 }
 
+/* Bolla messaggio inviata dall'utente corrente: a destra, sfondo primario */
 .chat-bubble--mine {
     align-self: flex-end;
     background: var(--color-primary);
@@ -2317,6 +2352,7 @@ ul, ol {
     border-bottom-right-radius: var(--radius-sm);
 }
 
+/* Bolla messaggio ricevuta: a sinistra, sfondo card scuro */
 .chat-bubble--theirs {
     align-self: flex-start;
     background: var(--color-bg-card);
@@ -2430,6 +2466,7 @@ ul, ol {
 }
 
 /* ── Card prestito (generica) ── */
+/* Evento prestito inline nel flusso dei messaggi (richiesta, accettazione, rifiuto…) */
 .chat-loan-card {
     display: flex;
     align-items: center;
@@ -2551,6 +2588,7 @@ ul, ol {
     flex-shrink: 0;
 }
 
+/* Barra azioni prestito: compare sopra l'input quando è in corso una trattativa */
 .loan-action-bar {
     background: var(--color-surface-2, #1e2130);
     border-top: 1px solid var(--color-border, rgba(255,255,255,.08));
@@ -2635,6 +2673,7 @@ ul, ol {
 }
 
 /* ── Pulsanti della barra azioni prestito ── */
+/* Bottone generico della barra azioni prestito (accetta / contro-offerta / rifiuta) */
 .loan-btn {
     display: inline-flex;
     align-items: center;
@@ -2692,6 +2731,7 @@ ul, ol {
 }
 
 /* ── Modal per l'offerta di punti cultura ── */
+/* Overlay semitrasparente che oscura lo sfondo quando il modal offerta è aperto */
 .offer-modal-overlay {
     position: fixed;
     inset: 0;
@@ -2706,6 +2746,7 @@ ul, ol {
 }
 .offer-modal-overlay--visible { opacity: 1; }
 
+/* Modal per specificare quanti punti cultura offrire per il prestito */
 .offer-modal {
     background: var(--color-surface-2, #1e2130);
     border: 1px solid var(--color-border, rgba(255,255,255,.1));
@@ -2887,6 +2928,7 @@ ul, ol {
    ADMIN — Dashboard Statistiche
    -------------------------------------------------------------------------- */
 
+/* Pagina dashboard amministrativa con statistiche e tabelle */
 .admin-page {
     max-width: 1100px;
     margin: 0 auto;
@@ -2910,6 +2952,7 @@ ul, ol {
 }
 
 /* Schede riepilogative (totale utenti, libri, prestiti, recensioni) */
+/* Griglia 4 colonne con le schede riepilogative (utenti, libri, prestiti, recensioni) */
 .admin-summary {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -2917,6 +2960,7 @@ ul, ol {
     margin-bottom: var(--spacing-xl);
 }
 
+/* Singola scheda riepilogativa nella dashboard admin */
 .admin-summary__card {
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
@@ -2950,6 +2994,7 @@ ul, ol {
     margin-bottom: var(--spacing-xl);
 }
 
+/* Card che ospita un grafico Chart.js (generi, attività mensile) */
 .admin-chart-card {
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
@@ -2985,6 +3030,7 @@ ul, ol {
     border-radius: var(--radius-md);
 }
 
+/* Tabella dati della dashboard admin (libri più popolari, ecc.) */
 .admin-table {
     width: 100%;
     border-collapse: collapse;
@@ -3133,6 +3179,7 @@ ul, ol {
 }
 
 /* Pannello dettaglio libro nella dashboard admin */
+/* Pannello di dettaglio libro selezionato nella tabella admin (copertina + metriche + grafico) */
 .admin-book-detail {
     display: flex;
     gap: var(--spacing-lg);
