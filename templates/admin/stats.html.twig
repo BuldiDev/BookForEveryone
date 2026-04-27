@@ -1,3 +1,13 @@
+{#
+    Pagina statistiche admin (solo per utenti con ruolo ADMIN).
+    Mostra:
+      - Card riassuntive: totale libri, utenti, recensioni, prestiti.
+      - 4 grafici Chart.js (valutazione media, like, lettori, recensioni) — top 10.
+      - Tabella ricercabile di tutti i libri con metriche per riga.
+      - Pannello dettaglio con grafico radar per il libro selezionato.
+    I dati sono iniettati inline come JSON tramite bookStats|json_encode.
+    Variabili passate dal controller: globalStats, bookStats.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}Statistiche Admin — BookForEveryone{% endblock %}
@@ -52,6 +62,7 @@
     </div>
 
     {# ── Ricerca singolo libro ── #}
+    {# Tabella completa dei libri con ricerca live client-side #}
     <div class="admin-table-section">
         <div class="admin-search-row">
             <h2 class="admin-table-section__title">Tutti i libri</h2>

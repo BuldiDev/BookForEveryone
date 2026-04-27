@@ -1,3 +1,11 @@
+{#
+    Pagina di registrazione.
+    Estende layout/auth.html.twig (senza navbar).
+    Include una mappa Leaflet (OpenStreetMap) per la selezione della posizione geografica.
+    La ricerca indirizzo usa l'API Nominatim con debounce a 400ms.
+    I campi latitude/longitude vengono popolati via JS e inviati con il form.
+    Variabili passate dal controller: registrationForm.
+#}
 {% extends 'layout/auth.html.twig' %}
 
 {% block title %}Registrati - BookForEveryone{% endblock %}
@@ -57,7 +65,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const map = L.map('register-map').setView([41.9028, 12.4964], 6); // Italia
+        const map = L.map('register-map').setView([41.9028, 12.4964], 6); // Centro Italia
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
         }).addTo(map);
@@ -78,7 +86,7 @@
             map.setView(e.latlng, Math.max(map.getZoom(), 13));
         });
 
-        // Address search with Nominatim
+        // Ricerca indirizzo con Nominatim (debounce 400ms)
         const searchInput = document.getElementById('address-search');
         const resultsDiv = document.getElementById('address-results');
         let debounceTimer;

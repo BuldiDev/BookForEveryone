@@ -1,3 +1,9 @@
+{#
+    Pagina lista follower di un utente.
+    Mostra i primi 20 follower; un pulsante "Mostra altri" rivela i restanti via JS.
+    Per ogni follower: avatar, nome, username, bio (se presente) e pulsante Segui/Segui già.
+    Variabili passate dal controller: user, followers.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}Follower di {{ user.displayName }} - BookForEveryone{% endblock %}

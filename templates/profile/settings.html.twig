@@ -1,3 +1,11 @@
+{#
+    Pagina impostazioni profilo.
+    Permette di modificare nome visualizzato, bio e posizione geografica.
+    La mappa Leaflet mostra la posizione corrente dell'utente e permette di aggiornarla.
+    La ricerca indirizzo usa l'API Nominatim con debounce a 400ms.
+    Il form invia i dati tramite POST con token CSRF.
+    Variabili passate dal controller: user.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}Impostazioni - BookForEveryone{% endblock %}

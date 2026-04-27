@@ -1,3 +1,9 @@
+{#
+    Pagina lista degli utenti seguiti da un utente.
+    Mostra i primi 20 seguiti; un pulsante "Mostra altri" rivela i restanti via JS.
+    Per ogni utente seguiti: avatar, nome, username, bio (se presente) e pulsante Segui/Segui già.
+    Variabili passate dal controller: user, following.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}Seguiti da {{ user.displayName }} - BookForEveryone{% endblock %}

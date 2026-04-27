@@ -1,3 +1,12 @@
+{#
+    Pagina profilo utente.
+    Mostra avatar, nome, username, bio, statistiche (letti/posseduti/follower/seguiti).
+    Se l'utente loggato è un altro utente: pulsanti Segui/Smetti e Messaggio.
+    Se è il proprio profilo: link alle impostazioni.
+    Sezioni libro: Consigliati, Letti, Posseduti (con "Mostra altri" se > 12).
+    Variabili passate dal controller: user, readCount, ownedCount, followersCount,
+      followingCount, recommendedBooks, readBooks, ownedBooks.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ user.displayName }} - BookForEveryone{% endblock %}
@@ -37,6 +46,7 @@
         </a>
     </div>
 
+    {# Azioni: Segui/Smetti e Messaggio (solo per altri utenti), Modifica profilo (proprio profilo) #}
     {% if app.user and app.user != user %}
         <div class="mt-md flex gap-sm items-center" style="justify-content: center;">
             <form method="post" action="{{ path('app_follow_toggle', {id: user.id}) }}">
@@ -60,8 +70,10 @@
     {% endif %}
 </div>
 
-<div class="container" style="padding-top: var(--spacing-lg); padding-bottom: 80px;">
-    <h2 style="font-size: var(--font-xl); font-weight: 700; margin-bottom: var(--spacing-md);">Libri consigliati</h2>
+    {# Sezioni libri: consigliati, letti, posseduti #}
+    <div class="container" style="padding-top: var(--spacing-lg); padding-bottom: 80px;">
+        {# Sezione: libri consigliati dall'utente #}
+        <h2 style="font-size: var(--font-xl); font-weight: 700; margin-bottom: var(--spacing-md);">Libri consigliati</h2>
     {% if recommendedBooks|length > 0 %}
         <div class="book-list" data-section="recommended">
             {% for book in recommendedBooks %}
@@ -81,7 +93,8 @@
         <p class="text-muted">Nessun libro consigliato ancora.</p>
     {% endif %}
 
-    <h2 style="font-size: var(--font-xl); font-weight: 700; margin-top: var(--spacing-2xl); margin-bottom: var(--spacing-md);">Libri letti</h2>
+        {# Sezione: libri segnati come letti #}
+        <h2 style="font-size: var(--font-xl); font-weight: 700; margin-top: var(--spacing-2xl); margin-bottom: var(--spacing-md);">Libri letti</h2>
     {% if readBooks|length > 0 %}
         <div class="book-list" data-section="read">
             {% for userBook in readBooks %}
@@ -101,7 +114,8 @@
         <p class="text-muted">Nessun libro letto ancora.</p>
     {% endif %}
 
-    <h2 style="font-size: var(--font-xl); font-weight: 700; margin-top: var(--spacing-2xl); margin-bottom: var(--spacing-md);">Libri posseduti</h2>
+        {# Sezione: libri posseduti fisicamente #}
+        <h2 style="font-size: var(--font-xl); font-weight: 700; margin-top: var(--spacing-2xl); margin-bottom: var(--spacing-md);">Libri posseduti</h2>
     {% if ownedBooks|length > 0 %}
         <div class="book-list" data-section="owned">
             {% for userBook in ownedBooks %}

@@ -1,4 +1,12 @@
 {# Singolo item del feed TikTok-style #}
+{#
+    Variabili attese:
+      - book: entità Book
+      - user_book: entità UserBook|null (stato like/letto/posseduto dell'utente)
+      - stats: array {avg_rating, likes_count}
+      - followingIds: array di ID degli utenti seguiti dall'utente loggato
+      - user_review: entità Review|null
+#}
 
 {# Card verticale con copertina #}
 <div class="feed-card">

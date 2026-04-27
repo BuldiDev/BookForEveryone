@@ -1,3 +1,11 @@
+{#
+    Pagina di aggiunta libro.
+    Flusso in due step:
+      1. L'utente inserisce l'ISBN e clicca "Cerca": la sezione #book-details-section viene rivelata via JS.
+      2. I campi titolo/autore/descrizione vengono pre-compilati e resi sola lettura; l'utente sceglie generi e carica immagini.
+    La ricerca ISBN chiama l'API di Open Library tramite fetch() JS.
+    Variabili passate dal controller: form.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}Aggiungi libro - BookForEveryone{% endblock %}

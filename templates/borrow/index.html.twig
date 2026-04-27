@@ -1,3 +1,12 @@
+{#
+    Pagina "Prendi in prestito".
+    Struttura: sidebar sinistra (ricerca + risultati/dettaglio) + mappa Leaflet a destra.
+    Flusso in due step:
+      1. L'utente cerca un libro per titolo/autore (fetch AJAX /borrow/search-books).
+      2. Seleziona un libro: la mappa mostra i proprietari vicini, con possibilità di inviare un'offerta.
+    Il modal "offer-modal" gestisce la negoziazione dei Culture Points.
+    Variabili passate dal controller: userLat, userLng, hasLocation.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}Prendi in prestito - BookForEveryone{% endblock %}
@@ -63,7 +72,7 @@
     </div>
 </div>
 
-{# ── Modal offerta ── #}
+{# ── Modal offerta prestito ── #}
 <div class="offer-modal-overlay" id="offer-modal" style="display:none;">
     <div class="offer-modal">
         <button type="button" class="offer-modal__close" id="offer-modal-close">&times;</button>

@@ -1,3 +1,10 @@
+{#
+    Pagina di dettaglio libro.
+    Mostra cover, titolo, autore, ISBN, voto medio, descrizione, generi,
+    foto degli utenti e recensioni.
+    Se l'utente loggato non è l'autore del post, mostra il pulsante Segui/Seguendo.
+    Variabili passate dal controller: book, reviews.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}{{ book.title }} - BookForEveryone{% endblock %}
@@ -75,6 +82,7 @@
         </div>
     {% endif %}
 
+    {# Sezione recensioni degli utenti #}
     <div class="mb-lg">
         <h2 style="font-size: var(--font-lg); font-weight: 600; margin-bottom: var(--spacing-sm);">Recensioni</h2>
         {% for review in reviews %}

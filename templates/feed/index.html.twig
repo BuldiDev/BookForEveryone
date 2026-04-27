@@ -1,3 +1,12 @@
+{#
+    Pagina principale del feed.
+    Mostra i libri in stile TikTok (scroll verticale) con due sezioni:
+      - "Seguiti": libri aggiunti dagli utenti che si segue.
+      - "Per te": libri suggeriti in base ai generi preferiti.
+    I libri sono renderizzati tramite il componente components/feed_item.html.twig.
+    La navigazione tra item avviene tramite i pulsanti freccia a destra.
+    Variabili passate dal controller: books, section, userBooks, bookStats, followingIds, userReviews.
+#}
 {% extends 'layout/app.html.twig' %}
 
 {% block title %}Feed - BookForEveryone{% endblock %}
