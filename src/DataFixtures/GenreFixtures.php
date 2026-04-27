@@ -6,12 +6,23 @@ use App\Entity\Genre;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
+/**
+ * Fixture per popolare la tabella dei generi letterari.
+ *
+ * Ogni genere ha un nome visualizzato e uno slug URL-friendly.
+ * La fixture è idempotente: se un genere esiste già (ricerca per slug)
+ * non viene ricreato, ma viene comunque registrata la Reference Doctrine
+ * affinché le altre fixture possano usare getReference('genre_<slug>').
+ *
+ * Esecuzione: php bin/console doctrine:fixtures:load
+ */
 class GenreFixtures extends Fixture
 {
     public function load(ObjectManager $manager): void
     {
         $genreRepo = $manager->getRepository(Genre::class);
 
+        // 20 generi letterari che coprono le categorie principali del catalogo
         $genres = [
             ['name' => 'Fantasy', 'slug' => 'fantasy'],
             ['name' => 'Fantascienza', 'slug' => 'fantascienza'],

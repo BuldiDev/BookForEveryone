@@ -1,3 +1,10 @@
+{#
+    Layout principale per le pagine dell'applicazione (richiede utente autenticato).
+    Struttura: sidebar sinistra (desktop) + contenuto centrale + navbar inferiore (mobile).
+    Estende layout/base.html.twig e definisce il blocco page_content.
+    Il badge dei Punti Cultura è mostrato in alto a destra su tutte le pagine.
+    La sezione "Seguiti" nella sidebar appare solo se l'utente segue almeno una persona.
+#}
 {# Layout con sidebar e navbar per le pagine dell'app (utente loggato) #}
 {% extends 'layout/base.html.twig' %}
 

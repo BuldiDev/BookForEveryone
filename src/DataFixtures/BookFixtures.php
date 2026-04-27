@@ -9,6 +9,15 @@ use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
+/**
+ * Fixture per popolare il catalogo con 20 libri di esempio rappresentativi.
+ *
+ * Dipende da GenreFixtures per poter associare i generi tramite getReference().
+ * Crea un utente amministrativo "bookadmin" che diventa il proprietario (addedBy)
+ * di tutti i libri caricati dalla fixture.
+ *
+ * Esecuzione: php bin/console doctrine:fixtures:load
+ */
 class BookFixtures extends Fixture implements DependentFixtureInterface
 {
     public function __construct(private UserPasswordHasherInterface $passwordHasher)
@@ -17,7 +26,7 @@ class BookFixtures extends Fixture implements DependentFixtureInterface
 
     public function load(ObjectManager $manager): void
     {
-        // Crea un utente "sistema" per addedBy
+        // Utente di sistema usato come addedBy per tutti i libri delle fixture
         $user = new User();
         $user->setEmail('admin@bookforeveryone.it');
         $user->setUsername('bookadmin');

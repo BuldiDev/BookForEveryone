@@ -6,6 +6,18 @@ use App\Repository\MessageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Messaggio all'interno di una conversazione.
+ *
+ * Un messaggio può essere di due nature:
+ *  - "text": messaggio testuale libero scritto dall'utente
+ *  - evento di prestito: messaggio generato automaticamente dal sistema durante
+ *    il flusso di una richiesta di prestito (offerta, controproposta, accettazione, ecc.)
+ *
+ * Tipi di evento prestito supportati:
+ *   loan_offer, loan_counter, loan_accepted, loan_declined,
+ *   loan_cancelled, loan_confirm, loan_completed
+ */
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 class Message
 {
@@ -14,29 +26,37 @@ class Message
     #[ORM\Column]
     private ?int $id = null;
 
+    /** Conversazione a cui appartiene il messaggio */
     #[ORM\ManyToOne(targetEntity: Conversation::class, inversedBy: 'messages')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Conversation $conversation = null;
 
+    /** Utente che ha inviato il messaggio (o il sistema per gli eventi prestito) */
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $sender = null;
 
+    /** Testo del messaggio o etichetta sintetica dell'evento (es. "Offerta: 5 CP") */
     #[ORM\Column(type: Types::TEXT)]
     private ?string $content = null;
 
-    /** Message type: text, loan_offer, loan_counter, loan_accepted, loan_declined, loan_cancelled, loan_confirm, loan_completed */
+    /** Tipo del messaggio: "text" per i messaggi normali, o codice evento per i prestiti */
     #[ORM\Column(length: 20, options: ['default' => 'text'])]
     private string $type = 'text';
 
+    /** Richiesta di prestito collegata (null per i messaggi di testo normali) */
     #[ORM\ManyToOne(targetEntity: LoanRequest::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?LoanRequest $loanRequest = null;
 
-    /** Snapshot data for loan events (points, bookTitle, bookCover, etc.) */
+    /**
+     * Dati snapshot dell'evento prestito (punti, titolo libro, copertina, ecc.).
+     * Salvati al momento dell'evento per preservare la cronologia anche se il prestito cambia.
+     */
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $metadata = null;
 
+    /** Data e ora di invio del messaggio */
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -65,6 +85,7 @@ class Message
     public function getMetadata(): ?array { return $this->metadata; }
     public function setMetadata(?array $metadata): static { $this->metadata = $metadata; return $this; }
 
+    /** Restituisce true se il messaggio è un evento di sistema legato a un prestito */
     public function isLoanEvent(): bool { return $this->type !== 'text'; }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }

@@ -15,31 +15,39 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'unique_user_book', columns: ['user_id', 'book_id'])]
 class UserBook
 {
+    /** ID univoco del record di relazione */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    /** Utente a cui appartiene questa interazione */
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'userBooks')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    /** Libro a cui si riferisce la relazione */
     #[ORM\ManyToOne(targetEntity: Book::class, inversedBy: 'userBooks')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Book $book = null;
 
+    /** L'utente ha messo "mi piace" al libro (cuore nel feed) */
     #[ORM\Column(type: 'boolean')]
     private bool $liked = false;
 
+    /** L'utente ha segnato il libro come letto */
     #[ORM\Column(name: 'has_read', type: 'boolean')]
     private bool $hasRead = false;
 
+    /** L'utente possiede fisicamente il libro (disponibile al prestito) */
     #[ORM\Column(type: 'boolean')]
     private bool $ownsPhysically = false;
 
+    /** Data e ora di creazione del record */
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
+    /** Data e ora dell'ultimo aggiornamento (aggiornata ad ogni modifica) */
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 

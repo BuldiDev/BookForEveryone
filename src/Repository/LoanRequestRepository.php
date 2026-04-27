@@ -9,6 +9,11 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
+ * Repository per l'entità LoanRequest (richieste di prestito).
+ *
+ * Una richiesta è considerata "attiva" finché non raggiunge uno stato terminale
+ * (completed, declined o cancelled).
+ *
  * @extends ServiceEntityRepository<LoanRequest>
  */
 class LoanRequestRepository extends ServiceEntityRepository
@@ -19,7 +24,9 @@ class LoanRequestRepository extends ServiceEntityRepository
     }
 
     /**
-     * Richiesta attiva (non completata/rifiutata) legata a una conversazione.
+     * Trova la richiesta di prestito ancora attiva associata a una conversazione.
+     * Usato per visualizzare la barra di azioni nella chat.
+     * Restituisce null se tutte le richieste della conversazione sono in stato terminale.
      */
     public function findActiveByConversation(Conversation $conversation): ?LoanRequest
     {
@@ -35,7 +42,8 @@ class LoanRequestRepository extends ServiceEntityRepository
     }
 
     /**
-     * Ultima richiesta (qualsiasi stato) per una conversazione.
+     * Trova l'ultima richiesta di prestito per una conversazione, indipendentemente dallo stato.
+     * Usato per mostrare lo storico delle trattative nella chat.
      */
     public function findLatestByConversation(Conversation $conversation): ?LoanRequest
     {
@@ -49,7 +57,8 @@ class LoanRequestRepository extends ServiceEntityRepository
     }
 
     /**
-     * Verifica se esiste già una richiesta attiva tra due utenti per lo stesso libro.
+     * Verifica se esiste già una richiesta attiva tra un richiedente e un proprietario
+     * per lo stesso libro, evitando richieste duplicate.
      */
     public function findActiveBetweenForBook(User $requester, User $owner, int $bookId): ?LoanRequest
     {

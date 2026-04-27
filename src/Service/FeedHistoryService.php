@@ -5,6 +5,19 @@ namespace App\Service;
 use App\Entity\User;
 use Predis\Client;
 
+/**
+ * Servizio per la gestione della cronologia del feed tramite Redis.
+ *
+ * Tiene traccia dei libri già mostrati a ciascun utente usando un Set Redis
+ * per evitare di riproporre gli stessi titoli durante lo scroll infinito.
+ * La cronologia ha una scadenza di 30 giorni; quando è esaurita il FeedController
+ * la resetta e ricomincia dal principio.
+ *
+ * Struttura dati Redis:
+ *   Chiave: "user:{id}:seen_books"
+ *   Tipo:   Set di interi (ID dei libri visti)
+ *   TTL:    30 giorni
+ */
 class FeedHistoryService
 {
     private Client $redis;
@@ -15,19 +28,22 @@ class FeedHistoryService
     }
 
     /**
-     * Segna un libro come visto dall'utente
+     * Aggiunge un singolo libro all'insieme dei libri già visti dall'utente.
      */
     public function markBookAsSeen(User $user, int $bookId): void
     {
         $key = $this->getSeenBooksKey($user);
         $this->redis->sadd($key, [$bookId]);
-        
-        // Imposta scadenza a 30 giorni
+
+        // Rinnova la scadenza a 30 giorni ad ogni aggiornamento
         $this->redis->expire($key, 60 * 60 * 24 * 30);
     }
 
     /**
-     * Segna multipli libri come visti
+     * Aggiunge un batch di libri all'insieme dei libri già visti.
+     * Usato dopo ogni caricamento di pagina nel feed per segnare tutti i libri mostrati.
+     *
+     * @param int[] $bookIds
      */
     public function markBooksAsSeen(User $user, array $bookIds): void
     {
@@ -37,24 +53,27 @@ class FeedHistoryService
 
         $key = $this->getSeenBooksKey($user);
         $this->redis->sadd($key, $bookIds);
-        
-        // Imposta scadenza a 30 giorni
+
+        // Rinnova la scadenza a 30 giorni ad ogni aggiornamento
         $this->redis->expire($key, 60 * 60 * 24 * 30);
     }
 
     /**
-     * Ottieni tutti gli ID dei libri già visti dall'utente
+     * Restituisce tutti gli ID dei libri già mostrati all'utente.
+     * Usato dal repository per escluderli dalla query del feed.
+     *
+     * @return int[]
      */
     public function getSeenBookIds(User $user): array
     {
         $key = $this->getSeenBooksKey($user);
         $ids = $this->redis->smembers($key);
-        
+
         return array_map('intval', $ids);
     }
 
     /**
-     * Verifica se un libro è stato visto
+     * Verifica se un singolo libro è già stato mostrato all'utente.
      */
     public function hasSeenBook(User $user, int $bookId): bool
     {
@@ -63,7 +82,9 @@ class FeedHistoryService
     }
 
     /**
-     * Resetta la cronologia dell'utente
+     * Azzera la cronologia del feed dell'utente.
+     * Chiamato quando tutti i libri disponibili sono già stati mostrati
+     * e il feed deve ricominciare dall'inizio.
      */
     public function resetHistory(User $user): void
     {
@@ -72,7 +93,7 @@ class FeedHistoryService
     }
 
     /**
-     * Genera la chiave Redis per i libri visti
+     * Costruisce la chiave Redis per i libri visti da un determinato utente.
      */
     private function getSeenBooksKey(User $user): string
     {

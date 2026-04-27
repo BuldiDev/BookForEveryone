@@ -12,6 +12,11 @@ use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
+ * Repository per l'entità Book.
+ *
+ * Contiene query ottimizzate per il feed personalizzato, la ricerca
+ * geolocalizzata e le statistiche della dashboard amministrativa.
+ *
  * @extends ServiceEntityRepository<Book>
  */
 class BookRepository extends ServiceEntityRepository
@@ -24,9 +29,18 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Feed TikTok: libri filtrati per generi preferiti dell'utente.
-     * Ordine: prima libri con generi preferiti, poi tutti gli altri, random con seed.
-     * Ottimizzato: 1 query nativa per gli ID con LIMIT, poi batch-hydrate.
+     * Genera il feed personalizzato per l'utente in due fasi:
+     *
+     * Fase 1 — Query SQL nativa per recuperare gli ID con ORDER + LIMIT:
+     *   - Priorità ai libri con almeno un genere tra i preferiti dell'utente
+     *   - Ordine casuale deterministico tramite CRC32(id + seed) per batch coerenti
+     *   - Esclude i libri già visti (seenBookIds gestiti da FeedHistoryService)
+     *
+     * Fase 2 — Hydration DQL: carica le entità complete solo per gli ID ottenuti,
+     *   mantenendo l'ordine della fase 1.
+     *
+     * @param int[] $excludeIds ID dei libri già mostrati all'utente
+     * @return Book[]
      */
     public function getFeedForUser(User $user, int $page = 1, int $limit = 10, ?int $seed = null, array $excludeIds = []): array
     {
@@ -36,13 +50,14 @@ class BookRepository extends ServiceEntityRepository
             $seed = random_int(1, 999999);
         }
 
-        $conn = $this->getEntityManager()->getConnection();
+        $conn   = $this->getEntityManager()->getConnection();
         $offset = ($page - 1) * $limit;
 
-        // === Fase 1: Query nativa per gli ID con ORDER BY + LIMIT ===
+        // === Fase 1: query nativa per gli ID con ORDER BY + LIMIT ===
         if (!$genres->isEmpty()) {
             $genreIds = array_map(fn($g) => $g->getId(), $genres->toArray());
 
+            // pref = 0 se il libro appartiene a un genere preferito, 1 altrimenti → i preferiti vengono prima
             $sql = 'SELECT b.id, '
                 . 'MAX(CASE WHEN bg2.genre_id IS NOT NULL THEN 0 ELSE 1 END) AS pref, '
                 . 'CRC32(CONCAT(b.id, :seed)) AS rnd '
@@ -50,25 +65,25 @@ class BookRepository extends ServiceEntityRepository
                 . 'LEFT JOIN book_genre bg2 ON bg2.book_id = b.id AND bg2.genre_id IN (:genreIds) ';
 
             $params = ['seed' => (string) $seed, 'genreIds' => $genreIds];
-            $types = ['genreIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER];
+            $types  = ['genreIds' => \Doctrine\DBAL\ArrayParameterType::INTEGER];
 
             if (!empty($excludeIds)) {
                 $sql .= 'WHERE b.id NOT IN (:excludeIds) ';
                 $params['excludeIds'] = $excludeIds;
-                $types['excludeIds'] = \Doctrine\DBAL\ArrayParameterType::INTEGER;
+                $types['excludeIds']  = \Doctrine\DBAL\ArrayParameterType::INTEGER;
             }
 
             $sql .= 'GROUP BY b.id ORDER BY pref ASC, rnd ASC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
         } else {
-            $sql = 'SELECT b.id, CRC32(CONCAT(b.id, :seed)) AS rnd FROM book b ';
-
+            // Nessun genere preferito: ordine puramente casuale con seed
+            $sql    = 'SELECT b.id, CRC32(CONCAT(b.id, :seed)) AS rnd FROM book b ';
             $params = ['seed' => (string) $seed];
-            $types = [];
+            $types  = [];
 
             if (!empty($excludeIds)) {
                 $sql .= 'WHERE b.id NOT IN (:excludeIds) ';
                 $params['excludeIds'] = $excludeIds;
-                $types['excludeIds'] = \Doctrine\DBAL\ArrayParameterType::INTEGER;
+                $types['excludeIds']  = \Doctrine\DBAL\ArrayParameterType::INTEGER;
             }
 
             $sql .= 'ORDER BY rnd ASC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
@@ -80,7 +95,7 @@ class BookRepository extends ServiceEntityRepository
             return [];
         }
 
-        // === Fase 2: Carica entità con addedBy e generi (1 sola DQL) ===
+        // === Fase 2: carica entità complete con JOIN (1 sola query DQL) ===
         $books = $this->createQueryBuilder('b')
             ->leftJoin('b.addedBy', 'a')->addSelect('a')
             ->leftJoin('b.genres', 'g')->addSelect('g')
@@ -90,7 +105,7 @@ class BookRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
-        // Mantieni l'ordine dalla query SQL
+        // Ripristina l'ordine stabilito dalla query SQL (DQL non garantisce l'ordine di IN)
         $idOrder = array_flip($pageIds);
         usort($books, fn($a, $b) => $idOrder[$a->getId()] <=> $idOrder[$b->getId()]);
 
@@ -98,7 +113,10 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Calcola averageRating e likesCount per un set di libri in 2 query native.
+     * Calcola valutazione media e conteggio like per un insieme di libri
+     * usando 2 query SQL native aggregate invece di N query per libro.
+     * Il risultato è cachato per 60 secondi.
+     *
      * @param int[] $bookIds
      * @return array<int, array{avg_rating: ?float, likes_count: int}>
      */
@@ -115,12 +133,14 @@ class BookRepository extends ServiceEntityRepository
 
             $conn = $this->getEntityManager()->getConnection();
 
+            // Query 1: valutazione media per ogni libro
             $rows = $conn->executeQuery(
                 'SELECT book_id, ROUND(AVG(rating), 1) AS avg_rating FROM review WHERE book_id IN (:ids) GROUP BY book_id',
                 ['ids' => $bookIds],
                 ['ids' => \Doctrine\DBAL\ArrayParameterType::INTEGER]
             )->fetchAllAssociative();
 
+            // Inizializza tutti i valori a default
             $stats = [];
             foreach ($bookIds as $id) {
                 $stats[$id] = ['avg_rating' => null, 'likes_count' => 0];
@@ -129,6 +149,7 @@ class BookRepository extends ServiceEntityRepository
                 $stats[(int) $row['book_id']]['avg_rating'] = (float) $row['avg_rating'];
             }
 
+            // Query 2: conteggio like per ogni libro
             $rows = $conn->executeQuery(
                 'SELECT book_id, COUNT(*) AS likes_count FROM user_book WHERE book_id IN (:ids) AND liked = 1 GROUP BY book_id',
                 ['ids' => $bookIds],
@@ -144,7 +165,8 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Esplora: tutti i libri recenti (per utenti non loggati o discover).
+     * Restituisce tutti i libri ordinati per data di inserimento (dal più recente).
+     * Usato per la scoperta di libri indipendente dai generi.
      */
     public function getRecentBooks(int $page = 1, int $limit = 10): Paginator
     {
@@ -157,7 +179,7 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Libri per genere specifico.
+     * Restituisce i libri appartenenti a un genere specifico, paginati.
      */
     public function getBooksByGenre(Genre $genre, int $page = 1, int $limit = 10): Paginator
     {
@@ -173,7 +195,8 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Cerca libri per titolo o autore.
+     * Ricerca libri per titolo, autore o ISBN (ricerca parziale LIKE).
+     *
      * @return Book[]
      */
     public function search(string $query, int $limit = 20): array
@@ -188,7 +211,8 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trova un libro per ISBN (per evitare duplicati).
+     * Trova un libro per ISBN esatto.
+     * Usato per impedire l'inserimento di libri duplicati.
      */
     public function findByIsbn(string $isbn): ?Book
     {
@@ -196,8 +220,9 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Statistiche per libro per la dashboard admin.
-     * Usa subquery aggregate per evitare prodotto cartesiano review x user_book.
+     * Statistiche aggregate per tutti i libri, usate nella dashboard admin.
+     * Usa subquery pre-aggregate per evitare il prodotto cartesiano tra review e user_book.
+     *
      * @return array<int, array{id:int, title:string, book_author:string, cover_url:string|null, avg_rating:float|null, reviews_count:int, likes_count:int, readers_count:int}>
      */
     public function getAdminBookStats(): array
@@ -215,6 +240,7 @@ class BookRepository extends ServiceEntityRepository
                 COALESCE(ub_agg.likes_count, 0)     AS likes_count,
                 COALESCE(ub_agg.readers_count, 0)   AS readers_count
             FROM book b
+            -- Subquery per valutazioni: evita il prodotto cartesiano con user_book
             LEFT JOIN (
                 SELECT book_id,
                        AVG(rating)  AS avg_rating,
@@ -222,6 +248,7 @@ class BookRepository extends ServiceEntityRepository
                 FROM review
                 GROUP BY book_id
             ) r_agg ON r_agg.book_id = b.id
+            -- Subquery per interazioni: evita il prodotto cartesiano con review
             LEFT JOIN (
                 SELECT book_id,
                        SUM(liked)    AS likes_count,
@@ -249,7 +276,7 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Statistiche globali per la dashboard admin.
+     * Contatori globali per la dashboard admin: libri, utenti, recensioni, prestiti.
      */
     public function getGlobalStats(): array
     {
@@ -264,7 +291,9 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Cerca libro esistente per titolo e autore (match approssimativo).
+     * Ricerca approssimativa per titolo e autore: usata per rilevare possibili duplicati
+     * prima di inserire un nuovo libro tramite le fixture o i comandi di popolamento.
+     *
      * @return Book[]
      */
     public function findSimilar(string $title, string $author, int $limit = 5): array
@@ -279,17 +308,22 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Libri suggeriti da persone che l'utente segue (interazioni o aggiunti dai seguiti).
+     * Recupera i libri consigliati dagli utenti seguiti.
+     *
+     * Logica: un libro è "dei seguiti" se almeno uno degli utenti seguiti
+     * lo ha messo like, lo ha letto, lo possiede, oppure lo ha aggiunto al catalogo.
+     * Esclude i libri già visti (deduplicazione tramite FeedHistoryService).
+     *
      * @param int[] $excludeIds
      * @return Book[]
      */
     public function getBooksFromFollowedUsers(User $user, int $page = 1, int $limit = 30, array $excludeIds = []): array
     {
-        $conn = $this->getEntityManager()->getConnection();
+        $conn   = $this->getEntityManager()->getConnection();
         $offset = ($page - 1) * $limit;
         $userId = $user->getId();
 
-        // Subquery per gli ID seguiti (evita di idratare tutti gli utenti seguiti)
+        // UNION: interazioni dei seguiti + libri aggiunti dai seguiti
         $sql = 'SELECT book_id AS id, MAX(ts) AS last_ts FROM ('
             . '  SELECT ub.book_id, COALESCE(ub.updated_at, ub.created_at) AS ts'
             . '  FROM user_book ub'
@@ -302,12 +336,12 @@ class BookRepository extends ServiceEntityRepository
             . ') AS sub ';
 
         $params = ['userId' => $userId];
-        $types = [];
+        $types  = [];
 
         if (!empty($excludeIds)) {
             $sql .= 'WHERE book_id NOT IN (:excludeIds) ';
             $params['excludeIds'] = $excludeIds;
-            $types['excludeIds'] = \Doctrine\DBAL\ArrayParameterType::INTEGER;
+            $types['excludeIds']  = \Doctrine\DBAL\ArrayParameterType::INTEGER;
         }
 
         $sql .= 'GROUP BY book_id ORDER BY last_ts DESC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
@@ -321,6 +355,7 @@ class BookRepository extends ServiceEntityRepository
             return [];
         }
 
+        // Hydration DQL con JOIN per evitare query N+1
         $books = $this->createQueryBuilder('b')
             ->leftJoin('b.addedBy', 'a')->addSelect('a')
             ->leftJoin('b.genres', 'g')->addSelect('g')
@@ -330,6 +365,7 @@ class BookRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
+        // Ripristina l'ordine della query SQL
         $idOrder = array_flip($pageIds);
         usort($books, fn($a, $b) => $idOrder[$a->getId()] <=> $idOrder[$b->getId()]);
 
@@ -337,15 +373,17 @@ class BookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Libri posseduti fisicamente da utenti vicini (entro $radiusKm km).
-     * Usa la formula Haversine approssimata per filtrare per distanza.
-     * Restituisce array di ['book' => Book, 'owner' => User, 'distance' => float km].
+     * Trova i libri fisicamente posseduti da utenti entro un certo raggio di distanza.
+     * Usa la formula di Haversine in SQL per calcolare la distanza geodetica
+     * dalla posizione di riferimento ($lat, $lng).
+     *
+     * @return array<int, array{book: Book, owner: User, distance: float}>
      */
     public function findNearbyLendableBooks(float $lat, float $lng, float $radiusKm = 25.0, int $limit = 50): array
     {
         $conn = $this->getEntityManager()->getConnection();
 
-        // Haversine in SQL (MySQL)
+        // Formula di Haversine approssimata con ACOS (valida per distanze < 200 km)
         $sql = '
             SELECT ub.book_id, ub.user_id,
                 (6371 * ACOS(
@@ -364,10 +402,10 @@ class BookRepository extends ServiceEntityRepository
         ';
 
         $rows = $conn->executeQuery($sql, [
-            'lat' => $lat,
-            'lng' => $lng,
+            'lat'    => $lat,
+            'lng'    => $lng,
             'radius' => $radiusKm,
-            'limit' => $limit,
+            'limit'  => $limit,
         ], [
             'limit' => \Doctrine\DBAL\ParameterType::INTEGER,
         ])->fetchAllAssociative();
@@ -376,6 +414,7 @@ class BookRepository extends ServiceEntityRepository
             return [];
         }
 
+        // Carica le entità libro e utente in due query batch
         $bookIds = array_unique(array_column($rows, 'book_id'));
         $userIds = array_unique(array_column($rows, 'user_id'));
 
@@ -392,20 +431,21 @@ class BookRepository extends ServiceEntityRepository
         }
 
         $userRepo = $this->getEntityManager()->getRepository(User::class);
-        $users = $userRepo->findBy(['id' => array_map('intval', $userIds)]);
-        $userMap = [];
+        $users    = $userRepo->findBy(['id' => array_map('intval', $userIds)]);
+        $userMap  = [];
         foreach ($users as $u) {
             $userMap[$u->getId()] = $u;
         }
 
+        // Combina i risultati SQL con le entità idratate
         $results = [];
         foreach ($rows as $row) {
             $bid = (int) $row['book_id'];
             $uid = (int) $row['user_id'];
             if (isset($bookMap[$bid], $userMap[$uid])) {
                 $results[] = [
-                    'book' => $bookMap[$bid],
-                    'owner' => $userMap[$uid],
+                    'book'     => $bookMap[$bid],
+                    'owner'    => $userMap[$uid],
                     'distance' => round((float) $row['distance'], 1),
                 ];
             }

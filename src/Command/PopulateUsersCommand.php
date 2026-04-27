@@ -13,6 +13,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
+/**
+ * Comando Symfony CLI per generare utenti fittizi con relazioni di follow.
+ *
+ * Esecuzione: php bin/console app:populate-users [count]
+ *
+ * Crea N utenti italiani con nomi, cognomi, bio e posizioni GPS casuali,
+ * quindi simula relazioni di follow (5–40 per utente) per alimentare il feed
+ * algoritmo che mostra i libri degli utenti seguiti.
+ * Tutti gli utenti generati hanno password 'prova' e onboarding completato.
+ * Viene sempre creato l'account fisso "bookforeveryone" se non esiste.
+ */
 #[AsCommand(
     name: 'app:populate-users',
     description: 'Crea utenti casuali con relazioni di follow tra di loro',
@@ -68,7 +79,7 @@ class PopulateUsersCommand extends Command
         null,
     ];
 
-    // Coordinate di città italiane (lat, lng)
+    // Coordinate geografiche di 25 città italiane per distribuire realisticamente gli utenti
     private const ITALIAN_CITIES = [
         [41.9028, 12.4964],  // Roma
         [45.4642, 9.1900],   // Milano
@@ -127,20 +138,20 @@ class PopulateUsersCommand extends Command
         $io->section('Fase 1: Creazione utenti...');
         $progressBar = $io->createProgressBar($count);
 
-        // Hash la password una sola volta e riusala per tutti
+        // La password viene hashata una sola volta e riutilizzata per tutti gli utenti
         $dummyUser = new User();
         $hashedPassword = $this->hasher->hashPassword($dummyUser, 'prova');
 
         $users = [];
         $usedUsernames = [];
 
-        // Carica username già esistenti nel DB
+        // Pre-carica gli username esistenti per evitare conflitti di unicità
         $existingUsers = $this->em->getRepository(User::class)->findAll();
         foreach ($existingUsers as $eu) {
             $usedUsernames[$eu->getUsername()] = true;
         }
 
-        // ── Utente fisso BookForEveryone ──
+        // ── Utente dimostrativo fisso BookForEveryone ──
         if (!isset($usedUsernames['bookforeveryone'])) {
             $fixedUser = new User();
             $fixedUser->setEmail('bookforeveryone@gmail.com');
@@ -151,20 +162,19 @@ class PopulateUsersCommand extends Command
             $fixedUser->setOnboardingCompleted(true);
             $fixedUser->addCulturePoints(1000);
             $fixedUser->setBio('Account ufficiale BookForEveryone 📚');
-            
-            // Posizione a Mazara del Vallo
+
+            // Posizionato a Mazara del Vallo come riferimento geografico
             $fixedUser->setLatitude(37.6544);
             $fixedUser->setLongitude(12.5914);
-            
-            // Aggiungi tutti i generi
+
             foreach ($genres as $genre) {
                 $fixedUser->addPreferredGenre($genre);
             }
-            
+
             $this->em->persist($fixedUser);
             $users[] = $fixedUser;
             $usedUsernames['bookforeveryone'] = true;
-            
+
             $io->note('✓ Creato utente fisso: bookforeveryone / prova');
         }
 
@@ -172,7 +182,7 @@ class PopulateUsersCommand extends Command
             $firstName = self::FIRST_NAMES[array_rand(self::FIRST_NAMES)];
             $lastName = self::LAST_NAMES[array_rand(self::LAST_NAMES)];
 
-            // Username unico
+            // Genera username unico aggiungendo un suffisso numerico casuale se necessario
             $baseUsername = strtolower($firstName . '.' . $lastName);
             $username = $baseUsername . random_int(100, 9999);
             while (isset($usedUsernames[$username])) {
@@ -189,21 +199,21 @@ class PopulateUsersCommand extends Command
             $user->setOnboardingCompleted(true);
             $user->addCulturePoints(random_int(0, 500));
 
-            // Bio casuale (70% ha una bio)
+            // Il 70% degli utenti ha una bio (il restante 30% rimane senza)
             $bio = self::BIOS[array_rand(self::BIOS)];
             if ($bio) {
                 $user->setBio($bio);
             }
 
-            // Posizione: 80% degli utenti ha una posizione
+            // L'80% degli utenti ha una posizione GPS; il restante 20% è senza zona
             if (random_int(1, 100) <= 80) {
                 $city = self::ITALIAN_CITIES[array_rand(self::ITALIAN_CITIES)];
-                // Aggiungi leggero offset per non avere tutti nello stesso punto
+                // Piccolo offset per simulare indirizzi diversi nella stessa città
                 $user->setLatitude($city[0] + (random_int(-500, 500) / 10000));
                 $user->setLongitude($city[1] + (random_int(-500, 500) / 10000));
             }
 
-            // Generi preferiti: 2-5 casuali
+            // Ogni utente ha tra 2 e 5 generi preferiti selezionati casualmente
             $numGenres = random_int(2, 5);
             $shuffled = $genres;
             shuffle($shuffled);
@@ -236,10 +246,10 @@ class PopulateUsersCommand extends Command
         for ($i = 0; $i < $totalUsers; $i++) {
             $user = $users[$i];
 
-            // Ogni utente segue tra 5 e 40 persone
+            // Ogni utente segue casualmente tra 5 e 40 altri utenti
             $numFollowing = random_int(5, min(40, $totalUsers - 1));
             $candidates = range(0, $totalUsers - 1);
-            unset($candidates[$i]); // Non seguire se stessi
+            unset($candidates[$i]); // Un utente non può seguire se stesso
             $candidates = array_values($candidates);
             shuffle($candidates);
 
@@ -254,7 +264,7 @@ class PopulateUsersCommand extends Command
                 $this->em->flush();
                 $this->em->clear();
 
-                // Ricarica i riferimenti dopo il clear
+                // Dopo clear() le entità sono staccate: ricaricare i riferimenti dal DB
                 $users = $this->em->getRepository(User::class)->findAll();
                 $totalUsers = count($users);
             }

@@ -13,14 +13,23 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
 use Symfony\Component\Security\Http\Authenticator\FormLoginAuthenticator;
 
+/**
+ * Controller per la registrazione di nuovi utenti.
+ */
 class RegistrationController extends AbstractController
 {
+    /**
+     * Mostra il modulo di registrazione e ne gestisce l'invio.
+     * La password viene hashata con bcrypt/argon2 prima della persistenza.
+     * Se l'utente è già autenticato viene reindirizzato al feed.
+     */
     #[Route('/register', name: 'app_register')]
     public function register(
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         EntityManagerInterface $em,
     ): Response {
+        // Utente già loggato: non mostrare il form di registrazione
         if ($this->getUser()) {
             return $this->redirectToRoute('app_feed');
         }
@@ -30,6 +39,7 @@ class RegistrationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // Hasha la password in chiaro prima di salvarla nel database
             $user->setPassword(
                 $passwordHasher->hashPassword($user, $form->get('plainPassword')->getData())
             );

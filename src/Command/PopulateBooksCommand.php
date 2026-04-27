@@ -14,6 +14,16 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+/**
+ * Comando Symfony CLI per popolare il database con libri reali da Open Library.
+ *
+ * Esecuzione: php bin/console app:populate-books [count]
+ *
+ * Scarica opere da vari subject letterari tramite l'API pubblica di Open Library,
+ * effettua una seconda richiesta per ogni opera per recuperare descrizione e copertina,
+ * e persiste i record Book nel database. Libri già presenti (per ISBN) vengono saltati.
+ * Utilizzato esclusivamente per la generazione di dati di test e sviluppo.
+ */
 #[AsCommand(
     name: 'app:populate-books',
     description: 'Popola il database con libri casuali da Open Library API',
@@ -41,7 +51,7 @@ class PopulateBooksCommand extends Command
 
         $io->title("Popolamento database con {$targetCount} libri da Open Library");
 
-        // Prendi tutti gli utenti per assegnare casualmente i libri
+        // Carica tutti gli utenti per assegnare casualmente addedBy a ogni libro
         $users = $this->userRepo->findAll();
         if (empty($users)) {
             $io->error('Nessun utente trovato! Crea prima degli utenti.');
@@ -50,7 +60,7 @@ class PopulateBooksCommand extends Command
 
         $io->info(sprintf('Trovati %d utenti per assegnare i libri', count($users)));
 
-        // Subjects da cui prendere libri
+        // Generi letterari da interrogare su Open Library per una varietà di titoli
         $subjects = [
             'science_fiction', 'fantasy', 'romance', 'thriller', 'mystery',
             'horror', 'biography', 'history', 'science', 'philosophy',
@@ -85,7 +95,7 @@ class PopulateBooksCommand extends Command
                         break 2;
                     }
 
-                    // Estrai dati del libro
+                    // Estrazione campi base dalla risposta subjects
                     $title = $work['title'] ?? null;
                     $authors = $work['authors'][0]['name'] ?? 'Unknown';
                     $firstPublishYear = $work['first_publish_year'] ?? null;
@@ -94,7 +104,7 @@ class PopulateBooksCommand extends Command
                         continue;
                     }
 
-                    // Prendi dettagli del work per descrizione e ISBN
+                    // Seconda richiesta al dettaglio del work per descrizione e copertina
                     $isbn = null;
                     $description = null;
                     $pageCount = null;
@@ -106,34 +116,32 @@ class PopulateBooksCommand extends Command
                             ]);
                             $workData = $workResponse->toArray();
 
-                            // Descrizione
+                            // La descrizione può essere stringa o oggetto {value:...} a seconda della versione API
                             if (isset($workData['description'])) {
                                 $description = is_array($workData['description'])
                                     ? ($workData['description']['value'] ?? '')
                                     : $workData['description'];
                             }
 
-                            // Cerca un'edizione con ISBN
                             if (isset($workData['covers'][0])) {
                                 $coverId = $workData['covers'][0];
                             }
                         } catch (\Exception $e) {
-                            // Ignora errori nel recupero dettagli
+                            // Errori di rete nel recupero dettagli non bloccano l'elaborazione
                         }
                     }
 
-                    // Genera ISBN fittizio se non trovato (per evitare duplicati)
+                    // Se l'API non restituisce un ISBN reale, si genera uno fittizio univoco
                     if (!$isbn) {
                         $isbn = '978' . str_pad((string)rand(1000000000, 9999999999), 10, '0', STR_PAD_LEFT);
                     }
 
-                    // Verifica che non esista già
+                    // Salta libri già presenti nel database per evitare duplicati
                     if ($this->bookRepo->findByIsbn($isbn)) {
                         $skipped++;
                         continue;
                     }
 
-                    // Crea il libro
                     $book = new Book();
                     $book->setIsbn($isbn);
                     $book->setTitle(mb_substr($title, 0, 255));
@@ -142,50 +150,45 @@ class PopulateBooksCommand extends Command
                     $book->setPublicationYear($firstPublishYear);
                     $book->setPageCount($pageCount);
 
-                    // Download cover image from Open Library
+                    // Scarica e salva la copertina del libro in public/uploads/books/
                     if (isset($work['cover_id'])) {
                         try {
                             $coverUrl = "https://covers.openlibrary.org/b/id/{$work['cover_id']}-L.jpg";
                             $coverResponse = $this->httpClient->request('GET', $coverUrl, ['timeout' => 10]);
-                            
+
                             if ($coverResponse->getStatusCode() === 200) {
                                 $imageContent = $coverResponse->getContent();
-                                
-                                // Create uploads directory if not exists
+
                                 $uploadsDir = __DIR__ . '/../../public/uploads/books';
                                 if (!is_dir($uploadsDir)) {
                                     mkdir($uploadsDir, 0755, true);
                                 }
-                                
-                                // Generate unique filename
+
                                 $filename = 'book_' . uniqid() . '_' . $work['cover_id'] . '.jpg';
                                 $filepath = $uploadsDir . '/' . $filename;
-                                
-                                // Save image
+
                                 file_put_contents($filepath, $imageContent);
-                                
-                                // Set relative path for database
                                 $book->setCoverUrl('/uploads/books/' . $filename);
                             }
                         } catch (\Exception $e) {
-                            // Se download fallisce, ignora e continua senza copertina
+                            // Il download della copertina è facoltativo: si prosegue senza
                         }
                     }
 
-                    // Assegna a un utente casuale
+                    // Attribuisce il libro a un utente casuale come autore del caricamento
                     $randomUser = $users[array_rand($users)];
                     $book->setAddedBy($randomUser);
 
                     $this->em->persist($book);
                     $created++;
 
-                    // Flush ogni 50 libri per performance
+                    // Flush periodico per evitare accumulo eccessivo in memoria
                     if ($created % 50 === 0) {
                         $this->em->flush();
                         $io->progressAdvance(50);
-                        
-                        // Pausa per evitare rate limiting
-                        usleep(500000); // 0.5 secondi
+
+                        // Breve pausa per rispettare i rate limit dell'API Open Library
+                        usleep(500000);
                     }
                 }
             } catch (\Exception $e) {

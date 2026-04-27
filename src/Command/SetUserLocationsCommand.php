@@ -10,6 +10,16 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * Comando Symfony CLI per concentrare tutti gli utenti intorno a Mazara del Vallo.
+ *
+ * Esecuzione: php bin/console app:set-user-locations
+ *
+ * Sovrascrive la posizione GPS di ogni utente con coordinate casuali
+ * entro un raggio di circa 20 km da Mazara del Vallo (37.6544°N, 12.5914°E).
+ * Usato per testare la funzionalità di ricerca libri in zona con dati realistici
+ * senza dover registrare utenti reali con posizioni geografiche diverse.
+ */
 #[AsCommand(
     name: 'app:set-user-locations',
     description: 'Imposta la posizione di tutti gli utenti vicino a Mazara del Vallo',
@@ -27,7 +37,7 @@ class SetUserLocationsCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        // Mazara del Vallo coordinate: 37.6544°N, 12.5914°E
+        // Coordinate base di Mazara del Vallo
         $baseLat = 37.6544;
         $baseLng = 12.5914;
 
@@ -35,7 +45,7 @@ class SetUserLocationsCommand extends Command
         $count = 0;
 
         foreach ($users as $user) {
-            // Variazione casuale di ~0.2 gradi (circa 20km)
+            // Offset casuale di ±0.2 gradi (~20 km) per simulare una distribuzione realistica
             $randomLat = $baseLat + (mt_rand(-200, 200) / 1000);
             $randomLng = $baseLng + (mt_rand(-200, 200) / 1000);
 

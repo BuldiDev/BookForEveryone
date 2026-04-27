@@ -1,3 +1,9 @@
+{#
+    Template base dell'applicazione.
+    Tutti gli altri layout estendono questo file.
+    Definisce i blocchi: title, stylesheets, flash_messages, body, navbar, javascripts.
+    I messaggi flash (successo, errore, info) sono mostrati sopra il contenuto principale.
+#}
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -8,6 +14,7 @@
     {% block stylesheets %}{% endblock %}
 </head>
 <body>
+    {# Messaggi flash di sessione: success, error, warning, info #}
     {% block flash_messages %}
         {% for label, messages in app.flashes %}
             {% for message in messages %}
@@ -20,6 +27,7 @@
 
     {% block navbar %}{% endblock %}
 
+    {# importmap('app') carica il bundle JS tramite Import Map di Symfony AssetMapper #}
     {% block javascripts %}
         {% block importmap %}{{ importmap('app') }}{% endblock %}
     {% endblock %}

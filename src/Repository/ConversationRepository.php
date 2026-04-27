@@ -8,6 +8,8 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
+ * Repository per l'entità Conversation.
+ *
  * @extends ServiceEntityRepository<Conversation>
  */
 class ConversationRepository extends ServiceEntityRepository
@@ -18,7 +20,8 @@ class ConversationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trova la conversazione 1-a-1 tra due utenti, se esiste.
+     * Trova la conversazione privata tra due utenti specifici, se esiste.
+     * Usato prima di crearne una nuova per evitare duplicati.
      */
     public function findBetween(User $a, User $b): ?Conversation
     {
@@ -34,7 +37,9 @@ class ConversationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Tutte le conversazioni di un utente, ordinate per ultimo messaggio.
+     * Restituisce tutte le conversazioni dell'utente ordinate per ultimo messaggio.
+     * Usato nella lista chat per mostrare le conversazioni più recenti in cima.
+     *
      * @return Conversation[]
      */
     public function findByUser(User $user): array

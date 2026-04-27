@@ -1,8 +1,24 @@
+/**
+ * Punto di ingresso principale del JavaScript dell'applicazione BookForEveryone.
+ *
+ * Questo modulo gestisce tutta l'interattività lato client:
+ * - Onboarding: selezione generi preferiti
+ * - Feed: scroll infinito, navigazione frecce, pannello descrizione con recensioni lazy
+ * - Azioni libro: like, letto, posseggo via fetch AJAX
+ * - Follow/unfollow utenti via fetch AJAX
+ * - Form aggiunta libro: ricerca ISBN con auto-fill campi
+ * - Pannello recensioni: selezione stelle, invio e aggiornamento
+ *
+ * Compatibile con Turbo (Hotwire): gli handler sono inizializzati su turbo:load
+ * per sopravvivere alle navigazioni SPA senza ricaricare la pagina.
+ */
 import './stimulus_bootstrap.js';
 
-// BookForEveryone - Main JS
+// ========== ONBOARDING: SELEZIONE GENERI ==========
 
-// Onboarding: toggle generi
+// Gestisce il click sulle chip dei generi nella pagina di onboarding.
+// Ogni chip ha un checkbox nascosto che viene sincronizzato con la classe CSS.
+// Il pulsante di conferma rimane disabilitato finché non sono selezionati almeno 3 generi.
 document.addEventListener('click', (e) => {
     const chip = e.target.closest('.genre-chip');
     if (chip) {
@@ -19,7 +35,10 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Feed: pannello descrizione (toggle) + caricamento lazy recensioni
+// ========== FEED: PANNELLO DESCRIZIONE E RECENSIONI LAZY ==========
+
+// Apre/chiude il pannello di descrizione espandibile sotto ogni card del feed.
+// Al primo apertura carica le recensioni via AJAX (lazy loading).
 document.addEventListener('click', (e) => {
     const descBtn = e.target.closest('.js-action-description');
     if (descBtn) {
@@ -38,6 +57,10 @@ document.addEventListener('click', (e) => {
     }
 });
 
+/**
+ * Carica le recensioni di un libro via AJAX la prima volta che il pannello viene aperto.
+ * Usa data-loaded per evitare richieste duplicate se il pannello viene aperto più volte.
+ */
 function loadReviews(bookId) {
     const container = document.getElementById('desc-reviews-' + bookId);
     if (!container || container.dataset.loaded === 'true') return;
@@ -50,7 +73,7 @@ function loadReviews(bookId) {
         .then(data => {
             container.dataset.loaded = 'true';
 
-            // Aggiorna header con media e conteggio
+            // Aggiorna l'header con la valutazione media e il numero di recensioni
             const header = container.querySelector('.desc-reviews__header');
             if (data.avgRating) {
                 header.innerHTML = `<span class="desc-reviews__title">Recensioni</span><span class="desc-reviews__avg">★ ${data.avgRating} <small>(${data.reviewsCount})</small></span>`;
@@ -63,6 +86,7 @@ function loadReviews(bookId) {
                 return;
             }
 
+            // Renderizza ogni recensione con stelle piene/vuote
             list.innerHTML = data.reviews.map(r => `
                 <div class="desc-review-item">
                     <div class="desc-review-item__header">
@@ -78,7 +102,11 @@ function loadReviews(bookId) {
         });
 }
 
-// Feed: azioni (like, letto, posseggo) via fetch
+// ========== FEED: AZIONI LIBRO (LIKE, LETTO, POSSEGGO, CONDIVIDI) ==========
+
+// Gestisce le azioni rapide sulla card del libro senza ricaricare la pagina.
+// like/read/own: POST a /book/{id}/action/{action} → risposta JSON con nuovo stato.
+// share: apre il foglio di condivisione nativo o copia il link negli appunti.
 document.addEventListener('click', (e) => {
     const actionBtn = e.target.closest('.feed-action[data-action]');
     if (!actionBtn) return;
@@ -93,28 +121,27 @@ document.addEventListener('click', (e) => {
         })
         .then(r => r.json())
         .then(data => {
+            // Aggiorna lo stato visivo del pulsante in base alla risposta del server
             if (action === 'like') {
                 actionBtn.classList.toggle('feed-action--liked', data.liked);
                 const label = actionBtn.querySelector('.feed-action__label');
                 if (label) label.textContent = data.likesCount;
             }
             if (action === 'read') actionBtn.classList.toggle('feed-action--read', data.hasRead);
-            if (action === 'own') actionBtn.classList.toggle('feed-action--own', data.ownsPhysically);
+            if (action === 'own')  actionBtn.classList.toggle('feed-action--own', data.ownsPhysically);
         });
     }
 
     if (action === 'share') {
         const shareUrl = window.location.origin + `/book/${bookId}`;
-        
+
         if (navigator.share) {
-            navigator.share({
-                title: 'BookForEveryone',
-                url: shareUrl
-            }).catch(() => {
-                // Se l'utente annulla la condivisione, non fare nulla
+            // Web Share API disponibile (mobile): apre il menu di condivisione di sistema
+            navigator.share({ title: 'BookForEveryone', url: shareUrl }).catch(() => {
+                // L'utente ha annullato la condivisione: nessuna azione necessaria
             });
         } else {
-            // Fallback: copia il link negli appunti
+            // Fallback desktop: copia il link negli appunti e mostra conferma temporanea
             navigator.clipboard.writeText(shareUrl).then(() => {
                 const originalLabel = actionBtn.querySelector('.feed-action__label').textContent;
                 actionBtn.querySelector('.feed-action__label').textContent = 'Copiato!';
@@ -128,7 +155,10 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Follow button via AJAX
+// ========== FOLLOW / UNFOLLOW ==========
+
+// Gestisce il pulsante Segui/Smetti di seguire presente sia nelle card del feed
+// che nelle pagine follower/following. Il token CSRF è incluso nel FormData.
 document.addEventListener('click', (e) => {
     const followBtn = e.target.closest('.feed-follow-btn[data-action="follow"], .user-follow-btn[data-action="follow"]');
     if (!followBtn) return;
@@ -137,7 +167,7 @@ document.addEventListener('click', (e) => {
     e.stopPropagation();
 
     const userId = followBtn.dataset.userId;
-    const csrf = followBtn.dataset.csrf;
+    const csrf   = followBtn.dataset.csrf;
 
     const formData = new FormData();
     formData.append('_token', csrf);
@@ -149,18 +179,17 @@ document.addEventListener('click', (e) => {
     })
     .then(r => r.json())
     .then(data => {
-        // Feed follow button
+        // Pulsante "+/✓" compatto nelle card del feed
         if (followBtn.classList.contains('feed-follow-btn')) {
             followBtn.classList.toggle('feed-follow-btn--following', data.following);
-            
             if (data.following) {
                 followBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>';
             } else {
                 followBtn.innerHTML = '+';
             }
         }
-        
-        // User list follow button
+
+        // Pulsante testuale "Segui / Segui già" nelle liste follower/following
         if (followBtn.classList.contains('user-follow-btn')) {
             if (data.following) {
                 followBtn.textContent = 'Segui già';
@@ -176,17 +205,28 @@ document.addEventListener('click', (e) => {
     .catch(err => console.error('Follow error:', err));
 });
 
-// Feed: frecce navigazione su/giù e scroll infinito
+// ========== FEED: SCROLL INFINITO E NAVIGAZIONE FRECCE ==========
+
+// Variabile globale per il cleanup dei listener di scroll.
+// È necessaria perché Turbo richiama initFeedScroll ad ogni navigazione
+// e senza cleanup si accumulerebbero handler duplicati.
 let _feedScrollCleanup = null;
 
+/**
+ * Inizializza il feed con scroll infinito e navigazione frecce su/giù.
+ *
+ * Il trigger dello scroll infinito si attiva quando l'utente raggiunge la metà
+ * del batch corrente (non il fondo), così i nuovi libri sono già pronti prima
+ * che l'utente arrivi all'ultimo elemento visibile.
+ */
 function initFeedScroll() {
-    // Pulisci listener precedenti (evita duplicati con Turbo)
+    // Rimuove i listener della sessione precedente prima di aggiungerne di nuovi
     if (_feedScrollCleanup) {
         _feedScrollCleanup();
         _feedScrollCleanup = null;
     }
 
-    const feed = document.getElementById('feed');
+    const feed    = document.getElementById('feed');
     const prevBtn = document.getElementById('feed-prev');
     const nextBtn = document.getElementById('feed-next');
 
@@ -194,6 +234,7 @@ function initFeedScroll() {
 
     const scrollContainer = feed;
 
+    // Restituisce l'indice del feed-item più vicino alla posizione di scroll corrente
     const getVisibleIndex = () => {
         const items = feed.querySelectorAll('.feed-item');
         if (!items.length) return 0;
@@ -207,6 +248,7 @@ function initFeedScroll() {
         return best;
     };
 
+    // Scorre fluidamente fino al feed-item con l'indice specificato
     const scrollToIndex = (idx) => {
         const items = feed.querySelectorAll('.feed-item');
         if (idx < 0 || idx >= items.length) return;
@@ -218,24 +260,24 @@ function initFeedScroll() {
     nextBtn.addEventListener('click', onNext);
     prevBtn.addEventListener('click', onPrev);
 
-    // Scroll infinito — carica in anticipo a metà batch
-    let isLoading = false;
-    let hasMore = true;
-    let batchStart = 0; // indice da cui inizia il batch corrente
-    let batchNum = 1;
+    // Stato dello scroll infinito
+    let isLoading   = false;
+    let hasMore     = true;
+    let batchStart  = 0; // indice da cui inizia l'ultimo batch caricato
+    let batchNum    = 1;
     let lastLoggedIndex = -1;
 
-    // Logga il libro corrente durante lo scroll
+    // Stampa in console il libro attualmente al centro della viewport (utile per debug)
     const logCurrentBook = () => {
         const items = feed.querySelectorAll('.feed-item');
         if (!items.length) return;
         const scrollTop = scrollContainer.scrollTop;
-        const viewH = scrollContainer.clientHeight;
+        const viewH  = scrollContainer.clientHeight;
         const center = scrollTop + viewH / 2;
         let currentIdx = 0;
         let bestDist = Infinity;
         items.forEach((item, i) => {
-            const mid = item.offsetTop + item.offsetHeight / 2;
+            const mid  = item.offsetTop + item.offsetHeight / 2;
             const dist = Math.abs(mid - center);
             if (dist < bestDist) { bestDist = dist; currentIdx = i; }
         });
@@ -254,12 +296,12 @@ function initFeedScroll() {
         const items = feed.querySelectorAll('.feed-item');
         if (!items.length) return;
 
-        // Trigger a metà del batch corrente
-        const batchSize = items.length - batchStart;
+        // Calcola il punto di trigger: metà del batch corrente (caricamento anticipato)
+        const batchSize  = items.length - batchStart;
         const triggerIdx = batchStart + Math.floor(batchSize / 2);
         const triggerItem = items[Math.min(triggerIdx, items.length - 1)];
 
-        const rect = triggerItem.getBoundingClientRect();
+        const rect          = triggerItem.getBoundingClientRect();
         const containerRect = scrollContainer.getBoundingClientRect();
 
         if (rect.top < containerRect.bottom) {
@@ -269,36 +311,40 @@ function initFeedScroll() {
 
     scrollContainer.addEventListener('scroll', onScroll);
 
+    /**
+     * Richiede il batch successivo al server (/feed/load-more) e aggiunge
+     * il HTML restituito in coda al feed. Aggiorna batchStart per il trigger successivo.
+     */
     async function loadMoreBooks() {
         if (isLoading || !hasMore) return;
-        
+
         isLoading = true;
         batchNum++;
         console.log(`⏳ Caricamento batch #${batchNum}...`);
 
         try {
-            const section = feed.dataset.section || 'per-te';
+            const section     = feed.dataset.section || 'per-te';
             const beforeCount = feed.querySelectorAll('.feed-item').length;
-            const response = await fetch(`/feed/load-more?section=${section}`);
-            const data = await response.json();
+            const response    = await fetch(`/feed/load-more?section=${section}`);
+            const data        = await response.json();
 
             if (data.html && data.html.trim()) {
                 feed.insertAdjacentHTML('beforeend', data.html);
-                batchStart = beforeCount; // il nuovo batch inizia dove finiva il precedente
+                batchStart = beforeCount; // il prossimo trigger partirà da qui
             }
 
             const totalItems = feed.querySelectorAll('.feed-item').length;
             console.log(`✅ Batch #${batchNum} — +${totalItems - beforeCount} libri, ${totalItems} totali`);
 
-            hasMore = data.hasMore;
+            hasMore   = data.hasMore;
             isLoading = false;
         } catch (error) {
-            console.error('Error loading more books:', error);
+            console.error('Errore nel caricamento libri:', error);
             isLoading = false;
         }
     }
 
-    // Cleanup per Turbo
+    // Salva la funzione di cleanup per rimuovere i listener al prossimo turbo:load
     _feedScrollCleanup = () => {
         scrollContainer.removeEventListener('scroll', onScroll);
         nextBtn.removeEventListener('click', onNext);
@@ -306,26 +352,32 @@ function initFeedScroll() {
     };
 }
 
-// Inizializza su turbo:load (copre sia primo caricamento che navigazioni Turbo)
+// turbo:load copre sia il primo caricamento che le navigazioni successive con Turbo Drive
 document.addEventListener('turbo:load', initFeedScroll);
-// Fallback se Turbo non è attivo
+// DOMContentLoaded come fallback per ambienti senza Turbo attivo
 document.addEventListener('DOMContentLoaded', () => {
     if (!document.documentElement.hasAttribute('data-turbo-preview')) {
         initFeedScroll();
     }
 });
 
-// ========== BOOK ADD FORM ==========
+// ========== FORM AGGIUNTA LIBRO ==========
+
+/**
+ * Inizializza il form di aggiunta libro con ricerca automatica per ISBN
+ * e selezione generi con autocomplete.
+ * Viene richiamata ad ogni turbo:load per sopravvivere alle navigazioni.
+ */
 function initBookAddForm() {
-    const isbnInput = document.querySelector('[name="book_form[isbn]"]');
-    const searchBtn = document.getElementById('isbn-search-btn');
-    const errorDiv = document.getElementById('isbn-error');
-    const loadingDiv = document.getElementById('isbn-loading');
+    const isbnInput      = document.querySelector('[name="book_form[isbn]"]');
+    const searchBtn      = document.getElementById('isbn-search-btn');
+    const errorDiv       = document.getElementById('isbn-error');
+    const loadingDiv     = document.getElementById('isbn-loading');
     const detailsSection = document.getElementById('book-details-section');
 
     if (!isbnInput || !searchBtn) return;
 
-    // ISBN search
+    // Ricerca ISBN: normalizza l'input rimuovendo trattini e spazi prima di inviare
     searchBtn.addEventListener('click', async () => {
         const isbn = isbnInput.value.trim().replace(/[^0-9X]/gi, '');
 
@@ -362,13 +414,13 @@ function initBookAddForm() {
                 return;
             }
 
-            // Fill fields
-            const titleField = document.querySelector('[name="book_form[title]"]');
-            const authorField = document.querySelector('[name="book_form[bookAuthor]"]');
-            const descField = document.querySelector('[name="book_form[description]"]');
+            // Popola automaticamente i campi del form con i dati restituiti dall'API
+            const titleField     = document.querySelector('[name="book_form[title]"]');
+            const authorField    = document.querySelector('[name="book_form[bookAuthor]"]');
+            const descField      = document.querySelector('[name="book_form[description]"]');
             const pageCountField = document.querySelector('[name="book_form[pageCount]"]');
             const publisherField = document.querySelector('[name="book_form[publisher]"]');
-            const yearField = document.querySelector('[name="book_form[publicationYear]"]');
+            const yearField      = document.querySelector('[name="book_form[publicationYear]"]');
 
             if (titleField) titleField.value = data.title || '';
             if (authorField) authorField.value = data.authors || '';
@@ -377,12 +429,12 @@ function initBookAddForm() {
             if (publisherField) publisherField.value = data.publisher || '';
             if (yearField) yearField.value = data.publishedDate || '';
 
-            // Show details section
+            // Rende visibile la sezione con i dettagli da compilare/verificare
             detailsSection.style.display = 'block';
             searchBtn.disabled = false;
 
         } catch (error) {
-            console.error('Fetch error:', error);
+            console.error('Errore ricerca ISBN:', error);
             loadingDiv.style.display = 'none';
             errorDiv.textContent = 'Errore durante la ricerca. Riprova.';
             errorDiv.style.display = 'block';
@@ -390,7 +442,7 @@ function initBookAddForm() {
         }
     });
 
-    // Enter key support
+    // Permette di avviare la ricerca ISBN anche premendo Invio nel campo
     isbnInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -398,21 +450,28 @@ function initBookAddForm() {
         }
     });
 
-    // Genre selector
-    const genreSearch = document.getElementById('genre-search');
-    const genreSuggestions = document.getElementById('genre-suggestions');
+    // ── Selettore generi con autocomplete ──
+    // Il <select> multiplo è nascosto: i generi sono gestiti tramite chip visive.
+    const genreSearch       = document.getElementById('genre-search');
+    const genreSuggestions  = document.getElementById('genre-suggestions');
     const selectedGenresDiv = document.getElementById('selected-genres');
-    const genreSelect = document.querySelector('select[name="book_form[genres][]"]');
+    const genreSelect       = document.querySelector('select[name="book_form[genres][]"]');
 
     if (!genreSearch || !genreSelect) return;
 
+    // Estrae tutti i generi dal <select> nascosto per usarli nelle suggestions
     const allGenres = Array.from(genreSelect.options).map(opt => ({
         id: opt.value,
         name: opt.text
     })).filter(g => g.id);
 
+    // Set che mantiene gli ID dei generi selezionati dall'utente
     const selectedGenres = new Set();
 
+    /**
+     * Ridisegna le chip dei generi selezionati e sincronizza il <select> nascosto.
+     * Mantenere il <select> aggiornato è fondamentale per l'invio del form.
+     */
     function updateSelectedGenres() {
         selectedGenresDiv.innerHTML = '';
         selectedGenres.forEach(genreId => {
@@ -428,14 +487,19 @@ function initBookAddForm() {
             selectedGenresDiv.appendChild(tag);
         });
 
+        // Sincronizza le opzioni selected del <select> nascosto
         Array.from(genreSelect.options).forEach(opt => {
             opt.selected = selectedGenres.has(opt.value);
         });
     }
 
+    /**
+     * Mostra il dropdown delle suggestions filtrate per la query corrente.
+     * Esclude i generi già selezionati dall'utente.
+     */
     function showSuggestions(query) {
-        const filtered = allGenres.filter(g => 
-            g.name.toLowerCase().includes(query.toLowerCase()) && 
+        const filtered = allGenres.filter(g =>
+            g.name.toLowerCase().includes(query.toLowerCase()) &&
             !selectedGenres.has(g.id)
         );
 
@@ -467,6 +531,7 @@ function initBookAddForm() {
         }
     });
 
+    // Click su un suggerimento: aggiunge il genere e chiude il dropdown
     genreSuggestions.addEventListener('click', (e) => {
         const item = e.target.closest('.genre-suggestion-item');
         if (!item) return;
@@ -478,6 +543,7 @@ function initBookAddForm() {
         genreSuggestions.style.display = 'none';
     });
 
+    // Click sul pulsante × di una chip: rimuove il genere dalla selezione
     selectedGenresDiv.addEventListener('click', (e) => {
         if (e.target.classList.contains('genre-tag-remove')) {
             const genreId = e.target.dataset.genreId;
@@ -486,6 +552,7 @@ function initBookAddForm() {
         }
     });
 
+    // Click fuori dal campo di ricerca: chiude il dropdown
     document.addEventListener('click', (e) => {
         if (!genreSearch.contains(e.target) && !genreSuggestions.contains(e.target)) {
             genreSuggestions.style.display = 'none';
@@ -493,13 +560,13 @@ function initBookAddForm() {
     });
 }
 
-// Init on load and on Turbo navigation
+// Inizializzazione al primo caricamento e ad ogni navigazione Turbo
 document.addEventListener('DOMContentLoaded', initBookAddForm);
 document.addEventListener('turbo:load', initBookAddForm);
 
-// ========== REVIEW PANEL ==========
+// ========== PANNELLO RECENSIONI ==========
 
-// Hover stelle: evidenzia dalla 1 fino alla stella sotto il cursore
+// Hover sulle stelle: illumina tutte le stelle dalla 1 fino a quella sotto il cursore
 document.addEventListener('mouseover', (e) => {
     const star = e.target.closest('.review-star');
     if (!star) return;
@@ -519,16 +586,17 @@ document.addEventListener('mouseout', (e) => {
     container.querySelectorAll('.review-star').forEach(s => s.classList.remove('is-hover'));
 });
 
+// Gestisce tutte le interazioni con il pannello recensioni tramite event delegation.
 document.addEventListener('click', (e) => {
 
-    // Apri/chiudi pannello
+    // Apertura/chiusura del pannello recensioni dalla card del feed
     const reviewBtn = e.target.closest('.js-action-review');
     if (reviewBtn) {
         const bookId = reviewBtn.dataset.book;
         const panel  = document.getElementById('review-' + bookId);
         if (!panel) return;
 
-        // Chiudi pannello descrizione se aperto
+        // Il pannello descrizione e quello recensioni non possono essere aperti insieme
         const descPanel = document.getElementById('desc-' + bookId);
         if (descPanel) descPanel.classList.remove('is-open');
 
@@ -536,7 +604,7 @@ document.addEventListener('click', (e) => {
         return;
     }
 
-    // Chiudi con il pulsante ×
+    // Chiusura tramite il pulsante ×
     const closeBtn = e.target.closest('[data-close-review]');
     if (closeBtn) {
         const panel = document.getElementById('review-' + closeBtn.dataset.closeReview);
@@ -544,7 +612,7 @@ document.addEventListener('click', (e) => {
         return;
     }
 
-    // Click su una stella
+    // Selezione di una stella: salva il voto in data-selected-rating e aggiorna la classe CSS
     const star = e.target.closest('.review-star');
     if (star) {
         const starsContainer = star.closest('.review-panel__stars');
@@ -557,7 +625,7 @@ document.addEventListener('click', (e) => {
         return;
     }
 
-    // Submit recensione
+    // Invio della recensione: POST a /book/{id}/review con rating e testo
     const submitBtn = e.target.closest('.review-panel__submit');
     if (submitBtn) {
         const panel   = submitBtn.closest('.feed-card__review-panel');
@@ -567,6 +635,7 @@ document.addEventListener('click', (e) => {
         const rating  = parseInt(starsEl?.dataset.selectedRating || 0);
         const content = panel.querySelector('.review-panel__text')?.value || '';
 
+        // Se nessuna stella è selezionata, anima il selettore per richiamare l'attenzione
         if (rating === 0) {
             starsEl.classList.add('review-stars--shake');
             setTimeout(() => starsEl.classList.remove('review-stars--shake'), 400);
@@ -589,7 +658,7 @@ document.addEventListener('click', (e) => {
         .then(data => {
             panel.classList.remove('is-open');
 
-            // Aggiorna pulsante nel feed
+            // Aggiorna il pulsante nella card del feed con il voto appena salvato
             const btn = document.querySelector(`.js-action-review[data-book="${bookId}"]`);
             if (btn) {
                 btn.classList.add('feed-action--reviewed');
@@ -599,11 +668,11 @@ document.addEventListener('click', (e) => {
                 btn.dataset.currentContent = content;
             }
 
-            // Aggiorna testo submit per future modifiche
+            // Cambia il testo del pulsante per indicare che è possibile modificare la recensione
             submitBtn.textContent = 'Aggiorna recensione';
             submitBtn.disabled = false;
 
-            // Aggiorna valutazione media visibile nella card
+            // Aggiorna la valutazione media mostrata nella card senza ricaricare la pagina
             if (data.avgRating) {
                 const ratingEl = document.querySelector(`.feed-card__rating[data-book="${bookId}"]`);
                 if (ratingEl) ratingEl.textContent = data.avgRating + '/5';

@@ -27,27 +27,33 @@ class LoanRequest
     public const STATUS_DECLINED  = 'declined';
     public const STATUS_CANCELLED = 'cancelled';
 
+    /** ID univoco della richiesta di prestito */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    /** Utente che ha richiesto il prestito */
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $requester = null;
 
+    /** Utente proprietario del libro */
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $owner = null;
 
+    /** Libro oggetto del prestito */
     #[ORM\ManyToOne(targetEntity: Book::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?Book $book = null;
 
+    /** Conversazione chat associata alla trattativa */
     #[ORM\ManyToOne(targetEntity: Conversation::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?Conversation $conversation = null;
 
+    /** Stato corrente della richiesta (pending / accepted / completed / declined / cancelled) */
     #[ORM\Column(length: 20)]
     private string $status = self::STATUS_PENDING;
 
@@ -59,16 +65,19 @@ class LoanRequest
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $lastOfferBy = null;
 
-    /** Conferma scambio fisico avvenuto */
+    /** Conferma scambio fisico da parte del richiedente */
     #[ORM\Column]
     private bool $requesterConfirmed = false;
 
+    /** Conferma scambio fisico da parte del proprietario */
     #[ORM\Column]
     private bool $ownerConfirmed = false;
 
+    /** Data e ora di creazione della richiesta */
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
+    /** Data e ora dell'ultimo aggiornamento (aggiornata automaticamente da Doctrine) */
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 

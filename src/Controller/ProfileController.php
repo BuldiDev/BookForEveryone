@@ -13,8 +13,17 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Controller per la gestione dei profili utente.
+ * Include visualizzazione del profilo pubblico, lista follower/seguiti,
+ * toggle del follow e modifica delle impostazioni personali.
+ */
 class ProfileController extends AbstractController
 {
+    /**
+     * Mostra il profilo pubblico di un utente con le sue raccolte di libri:
+     * libri consigliati (aggiunti), libri letti e libri posseduti.
+     */
     #[Route('/profile/{username}', name: 'app_profile')]
     public function show(
         string $username,
@@ -28,22 +37,25 @@ class ProfileController extends AbstractController
             throw $this->createNotFoundException('Utente non trovato');
         }
 
-        $readBooks = $userBookRepo->findReadByUser($user);
+        $readBooks  = $userBookRepo->findReadByUser($user);
         $ownedBooks = $userBookRepo->findOwnedByUser($user);
-        $counts = $userRepo->getProfileCounts($user);
+        $counts     = $userRepo->getProfileCounts($user);
 
         return $this->render('profile/show.html.twig', [
-            'user' => $user,
-            'readBooks' => $readBooks,
-            'ownedBooks' => $ownedBooks,
-            'readCount' => count($readBooks),
-            'ownedCount' => count($ownedBooks),
-            'followersCount' => $counts['followers'],
-            'followingCount' => $counts['following'],
+            'user'             => $user,
+            'readBooks'        => $readBooks,
+            'ownedBooks'       => $ownedBooks,
+            'readCount'        => count($readBooks),
+            'ownedCount'       => count($ownedBooks),
+            'followersCount'   => $counts['followers'],
+            'followingCount'   => $counts['following'],
             'recommendedBooks' => $bookRepo->findBy(['addedBy' => $user], ['createdAt' => 'DESC']),
         ]);
     }
 
+    /**
+     * Mostra la lista degli utenti che seguono il profilo indicato.
+     */
     #[Route('/profile/{username}/followers', name: 'app_profile_followers')]
     public function followers(
         string $username,
@@ -56,11 +68,14 @@ class ProfileController extends AbstractController
         }
 
         return $this->render('profile/followers.html.twig', [
-            'user' => $user,
+            'user'      => $user,
             'followers' => $user->getFollowers(),
         ]);
     }
 
+    /**
+     * Mostra la lista degli utenti che il profilo indicato segue.
+     */
     #[Route('/profile/{username}/following', name: 'app_profile_following')]
     public function following(
         string $username,
@@ -73,11 +88,16 @@ class ProfileController extends AbstractController
         }
 
         return $this->render('profile/following.html.twig', [
-            'user' => $user,
+            'user'      => $user,
             'following' => $user->getFollowing(),
         ]);
     }
 
+    /**
+     * Aggiunge o rimuove il follow verso un altro utente (toggle).
+     * Supporta sia richieste AJAX (restituisce JSON) sia form POST tradizionali.
+     * Invalida la cache Redis dei contatori follow dopo ogni modifica.
+     */
     #[Route('/user/{id}/follow', name: 'app_follow_toggle', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function toggleFollow(
         int $id,
@@ -92,18 +112,18 @@ class ProfileController extends AbstractController
             throw $this->createNotFoundException();
         }
 
+        // Valida il token CSRF incluso nel form o nella richiesta AJAX
         if (!$this->isCsrfTokenValid('follow' . $id, $request->request->get('_token'))) {
             if ($request->isXmlHttpRequest()) {
-                return new JsonResponse(['error' => 'Invalid CSRF token'], 400);
+                return new JsonResponse(['error' => 'Token CSRF non valido'], 400);
             }
             return $this->redirectToRoute('app_profile', ['username' => $targetUser->getUsername()]);
         }
 
         /** @var User $currentUser */
         $currentUser = $this->getUser();
-
         $isFollowing = $currentUser->isFollowing($targetUser);
-        
+
         if ($isFollowing) {
             $currentUser->unfollow($targetUser);
         } else {
@@ -112,12 +132,12 @@ class ProfileController extends AbstractController
 
         $em->flush();
 
-        // Invalida cache Redis per follow counts e following IDs
+        // Invalida la cache Redis dei contatori e degli ID following per entrambi gli utenti
         $userRepo->invalidateFollowingIds($currentUser);
         $userRepo->invalidateProfileCounts($currentUser);
         $userRepo->invalidateProfileCounts($targetUser);
 
-        // Return JSON for AJAX requests
+        // Risposta JSON per le richieste AJAX (pulsante follow nel feed e nelle liste utenti)
         if ($request->isXmlHttpRequest()) {
             return new JsonResponse([
                 'following' => !$isFollowing,
@@ -127,6 +147,10 @@ class ProfileController extends AbstractController
         return $this->redirectToRoute('app_profile', ['username' => $targetUser->getUsername()]);
     }
 
+    /**
+     * Mostra e gestisce la pagina delle impostazioni personali dell'utente:
+     * nome visualizzato, biografia e posizione geografica (latitudine/longitudine).
+     */
     #[Route('/settings', name: 'app_settings')]
     public function settings(
         Request $request,
@@ -144,10 +168,11 @@ class ProfileController extends AbstractController
             }
 
             $displayName = trim($request->request->getString('displayName'));
-            $bio = trim($request->request->getString('bio'));
-            $lat = $request->request->get('latitude');
-            $lng = $request->request->get('longitude');
+            $bio         = trim($request->request->getString('bio'));
+            $lat         = $request->request->get('latitude');
+            $lng         = $request->request->get('longitude');
 
+            // I campi opzionali vengono impostati a null se vuoti
             $user->setDisplayName($displayName ?: null);
             $user->setBio($bio ?: null);
             $user->setLatitude($lat !== '' && $lat !== null ? (float) $lat : null);

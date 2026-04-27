@@ -21,8 +21,17 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
+/**
+ * Controller che gestisce tutto ciò che riguarda i libri:
+ * aggiunta, visualizzazione, azioni rapide (like/letto/possiedo) e recensioni.
+ */
 class BookController extends AbstractController
 {
+    /**
+     * Endpoint AJAX per la ricerca automatica dei dati di un libro tramite ISBN.
+     * Prima controlla il database locale, poi interroga Google Books e Open Library.
+     * Il risultato viene memorizzato in cache Redis per 24 ore.
+     */
     #[Route('/book/fetch-isbn/{isbn}', name: 'app_book_fetch_isbn', methods: ['GET'])]
     public function fetchIsbn(
         string $isbn,
@@ -32,9 +41,10 @@ class BookController extends AbstractController
     ): JsonResponse {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
+        // Normalizza l'ISBN rimuovendo trattini e spazi (es. 978-88-... → 9788...)
         $isbn = preg_replace('/[^0-9X]/i', '', $isbn);
 
-        // Verifica se esiste già nel DB
+        // Verifica se il libro è già presente nel database
         $existing = $bookRepo->findByIsbn($isbn);
         if ($existing) {
             return new JsonResponse([
@@ -44,11 +54,12 @@ class BookController extends AbstractController
             ]);
         }
 
+        // Recupera i dati dalle API esterne (con cache di 24 ore)
         $bookData = $cache->get('isbn_api_' . $isbn, function (ItemInterface $item) use ($isbn, $httpClient) {
             $item->expiresAfter(86400);
             return $this->fetchBookDataFromApis($isbn, $httpClient);
         });
-        
+
         if (!$bookData) {
             return new JsonResponse([
                 'error' => 'ISBN non trovato. Verifica che sia corretto.',
@@ -58,41 +69,43 @@ class BookController extends AbstractController
         return new JsonResponse(array_merge(['exists' => false], $bookData));
     }
 
+    /**
+     * Interroga in sequenza Google Books API e, in caso di fallimento, Open Library API.
+     * Restituisce un array normalizzato con i metadati del libro, oppure null se non trovato.
+     */
     private function fetchBookDataFromApis(string $isbn, HttpClientInterface $httpClient): ?array
     {
-        // Prova prima Google Books API
         $bookData = null;
-        
+
+        // --- Tentativo 1: Google Books API ---
         try {
             $response = $httpClient->request('GET', 'https://www.googleapis.com/books/v1/volumes', [
                 'query' => ['q' => 'isbn:' . $isbn],
                 'timeout' => 10,
             ]);
 
-            $statusCode = $response->getStatusCode();
-            
-            if ($statusCode === 200) {
+            if ($response->getStatusCode() === 200) {
                 $data = $response->toArray();
-                
+
                 if (!empty($data['items'])) {
                     $volumeInfo = $data['items'][0]['volumeInfo'] ?? [];
                     $bookData = [
-                        'title' => $volumeInfo['title'] ?? '',
-                        'authors' => $volumeInfo['authors'][0] ?? '',
-                        'description' => $volumeInfo['description'] ?? '',
-                        'pageCount' => $volumeInfo['pageCount'] ?? null,
-                        'publisher' => $volumeInfo['publisher'] ?? '',
+                        'title'         => $volumeInfo['title'] ?? '',
+                        'authors'       => $volumeInfo['authors'][0] ?? '',
+                        'description'   => $volumeInfo['description'] ?? '',
+                        'pageCount'     => $volumeInfo['pageCount'] ?? null,
+                        'publisher'     => $volumeInfo['publisher'] ?? '',
                         'publishedDate' => isset($volumeInfo['publishedDate']) ? (int) substr($volumeInfo['publishedDate'], 0, 4) : null,
-                        'coverUrl' => $volumeInfo['imageLinks']['thumbnail'] ?? null,
-                        'categories' => $volumeInfo['categories'] ?? [],
+                        'coverUrl'      => $volumeInfo['imageLinks']['thumbnail'] ?? null,
+                        'categories'    => $volumeInfo['categories'] ?? [],
                     ];
                 }
             }
         } catch (\Exception $e) {
-            // Google Books fallito, proveremo Open Library
+            // Google Books non disponibile, si tenta con Open Library
         }
 
-        // Se Google Books non ha funzionato, prova Open Library API
+        // --- Tentativo 2: Open Library API (fallback) ---
         if (!$bookData) {
             try {
                 $response = $httpClient->request('GET', "https://openlibrary.org/isbn/{$isbn}.json", [
@@ -101,57 +114,62 @@ class BookController extends AbstractController
 
                 if ($response->getStatusCode() === 200) {
                     $data = $response->toArray();
-                    
-                    // Ottieni anche i dettagli del work per la descrizione
+
+                    // Recupera la descrizione dal record "work" associato al volume
                     $description = '';
                     if (isset($data['works'][0]['key'])) {
                         try {
                             $workResponse = $httpClient->request('GET', "https://openlibrary.org{$data['works'][0]['key']}.json", [
                                 'timeout' => 5,
                             ]);
-                            $workData = $workResponse->toArray();
-                            $description = is_array($workData['description'] ?? null) 
-                                ? ($workData['description']['value'] ?? '') 
+                            $workData    = $workResponse->toArray();
+                            $description = is_array($workData['description'] ?? null)
+                                ? ($workData['description']['value'] ?? '')
                                 : ($workData['description'] ?? '');
                         } catch (\Exception $e) {
-                            // Ignora errori nella richiesta del work
+                            // La descrizione è opzionale, si prosegue senza
                         }
                     }
-                    
-                    // Ottieni i nomi degli autori
+
+                    // Recupera il nome dell'autore dalla chiave autore di Open Library
                     $authorName = '';
                     if (!empty($data['authors'])) {
                         try {
-                            $authorKey = $data['authors'][0]['key'];
+                            $authorKey      = $data['authors'][0]['key'];
                             $authorResponse = $httpClient->request('GET', "https://openlibrary.org{$authorKey}.json", [
                                 'timeout' => 5,
                             ]);
                             $authorData = $authorResponse->toArray();
                             $authorName = $authorData['name'] ?? '';
                         } catch (\Exception $e) {
-                            // Ignora errori nella richiesta dell'autore
+                            // Nome autore non disponibile
                         }
                     }
-                    
+
                     $bookData = [
-                        'title' => $data['title'] ?? '',
-                        'authors' => $authorName,
-                        'description' => $description,
-                        'pageCount' => $data['number_of_pages'] ?? null,
-                        'publisher' => $data['publishers'][0] ?? '',
+                        'title'         => $data['title'] ?? '',
+                        'authors'       => $authorName,
+                        'description'   => $description,
+                        'pageCount'     => $data['number_of_pages'] ?? null,
+                        'publisher'     => $data['publishers'][0] ?? '',
                         'publishedDate' => isset($data['publish_date']) ? (int) substr($data['publish_date'], -4) : null,
-                        'coverUrl' => isset($data['covers'][0]) ? "https://covers.openlibrary.org/b/id/{$data['covers'][0]}-M.jpg" : null,
-                        'categories' => $data['subjects'] ?? [],
+                        'coverUrl'      => isset($data['covers'][0]) ? "https://covers.openlibrary.org/b/id/{$data['covers'][0]}-M.jpg" : null,
+                        'categories'    => $data['subjects'] ?? [],
                     ];
                 }
             } catch (\Exception $e) {
-                // Anche Open Library è fallito
+                // Anche Open Library non ha trovato il libro
             }
         }
 
         return $bookData;
     }
 
+    /**
+     * Mostra il modulo di aggiunta libro e ne gestisce l'invio.
+     * Al submit verifica i duplicati per ISBN, ri-scarica i metadati dall'API
+     * (per garantire l'integrità dei dati) e salva copertina e foto dell'utente.
+     */
     #[Route('/book/add', name: 'app_book_add')]
     public function add(
         Request $request,
@@ -165,14 +183,14 @@ class BookController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Controlla se esiste già per ISBN (obbligatorio)
+            // Impedisce duplicati: se l'ISBN è già nel DB si reindirizza alla scheda esistente
             $existing = $bookRepo->findByIsbn($book->getIsbn());
             if ($existing) {
                 $this->addFlash('error', 'Questo libro è già stato aggiunto da ' . $existing->getAddedBy()->getDisplayName() . '!');
                 return $this->redirectToRoute('app_book_show', ['id' => $existing->getId()]);
             }
 
-            // Ri-ottieni i dati dall'API per garantire l'integrità
+            // Ri-scarica i metadati dall'API per evitare dati manomessi nel form
             $apiData = $this->fetchBookDataFromApis($book->getIsbn(), $httpClient);
             if ($apiData) {
                 $book->setTitle($apiData['title']);
@@ -183,19 +201,20 @@ class BookController extends AbstractController
                 $book->setPublicationYear($apiData['publishedDate']);
             }
 
-            // Upload copertina ufficiale
+            // Carica la copertina ufficiale se fornita dall'utente
             $coverFile = $form->get('coverFile')->getData();
             if ($coverFile) {
                 $coverPath = $uploader->upload($coverFile);
                 $book->setCoverUrl($coverPath);
             }
 
+            // Assegna l'utente che ha aggiunto il libro e premia con 10 Culture Points
             $book->setAddedBy($this->getUser());
             $this->getUser()->addCulturePoints(10);
             $em->persist($book);
             $em->flush();
 
-            // Upload foto utente
+            // Salva le eventuali foto personali del libro caricate dall'utente
             $userPhotos = $form->get('userPhotos')->getData();
             if ($userPhotos) {
                 $position = 0;
@@ -212,7 +231,6 @@ class BookController extends AbstractController
             }
 
             $this->addFlash('success', 'Libro aggiunto!');
-
             return $this->redirectToRoute('app_book_show', ['id' => $book->getId()]);
         }
 
@@ -221,24 +239,32 @@ class BookController extends AbstractController
         ]);
     }
 
+    /**
+     * Mostra la scheda dettaglio di un libro con recensioni e stato dell'utente corrente.
+     */
     #[Route('/book/{id}', name: 'app_book_show', requirements: ['id' => '\d+'])]
     public function show(
         Book $book,
         ReviewRepository $reviewRepo,
         UserBookRepository $userBookRepo,
     ): Response {
+        // Recupera l'interazione dell'utente con questo libro (like, letto, possiedo)
         $userBook = null;
         if ($this->getUser()) {
             $userBook = $userBookRepo->findByUserAndBook($this->getUser(), $book);
         }
 
         return $this->render('book/show.html.twig', [
-            'book' => $book,
-            'reviews' => $reviewRepo->getReviewsForBook($book),
+            'book'     => $book,
+            'reviews'  => $reviewRepo->getReviewsForBook($book),
             'userBook' => $userBook,
         ]);
     }
 
+    /**
+     * Gestisce le azioni rapide sul libro: like, segna come letto, indica che lo possiedi.
+     * Risponde in JSON per essere chiamato via fetch() dal frontend.
+     */
     #[Route('/book/{id}/action/{action}', name: 'app_book_action', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function action(
         Book $book,
@@ -248,27 +274,33 @@ class BookController extends AbstractController
     ): JsonResponse {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
-        $user = $this->getUser();
+        $user     = $this->getUser();
+        // Recupera o crea il record di interazione utente-libro
         $userBook = $userBookRepo->findOrCreate($user, $book);
 
+        // Esegui l'azione richiesta in modo toggle (on/off)
         match ($action) {
             'like' => $userBook->toggleLike(),
             'read' => $userBook->toggleHasRead(),
-            'own' => $userBook->toggleOwnsPhysically(),
+            'own'  => $userBook->toggleOwnsPhysically(),
             default => null,
         };
 
         $em->persist($userBook);
         $em->flush();
 
+        // Restituisce lo stato aggiornato al frontend
         return new JsonResponse([
-            'liked' => $userBook->isLiked(),
-            'hasRead' => $userBook->hasRead(),
+            'liked'          => $userBook->isLiked(),
+            'hasRead'        => $userBook->hasRead(),
             'ownsPhysically' => $userBook->ownsPhysically(),
-            'likesCount' => $book->getLikesCount(),
+            'likesCount'     => $book->getLikesCount(),
         ]);
     }
 
+    /**
+     * Restituisce in JSON le recensioni di un libro (usato dal pannello espandibile nel feed).
+     */
     #[Route('/book/{id}/reviews', name: 'app_book_reviews', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function reviews(Book $book, ReviewRepository $reviewRepo): JsonResponse
     {
@@ -286,6 +318,10 @@ class BookController extends AbstractController
         ]);
     }
 
+    /**
+     * Riceve e salva (o aggiorna) la recensione di un utente su un libro.
+     * Se l'utente ha già recensito lo stesso libro, sovrascrive il valore precedente.
+     */
     #[Route('/book/{id}/review', name: 'app_book_review', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function review(
         Book $book,
@@ -295,14 +331,16 @@ class BookController extends AbstractController
     ): JsonResponse {
         $this->denyAccessUnlessGranted('ROLE_USER');
 
+        // Valida il voto: deve essere un intero tra 1 e 5
         $rating = (int) $request->request->get('rating', 0);
         if ($rating < 1 || $rating > 5) {
             return new JsonResponse(['error' => 'Rating non valido'], 400);
         }
 
-        $user = $this->getUser();
+        $user    = $this->getUser();
         $content = trim((string) $request->request->get('content', ''));
 
+        // Cerca una recensione esistente per aggiornare invece di duplicare
         $review = $reviewRepo->findByUserAndBook($user, $book);
         if (!$review) {
             $review = new Review();

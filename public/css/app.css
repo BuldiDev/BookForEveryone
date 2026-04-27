@@ -711,7 +711,7 @@ ul, ol {
     line-height: 1;
 }
 
-/* Profile picture with follow button */
+/* Foto profilo con pulsante segui sovrapposto nella colonna azioni */
 .feed-action--profile {
     position: relative;
     cursor: default;
@@ -1034,7 +1034,7 @@ ul, ol {
     margin-top: var(--spacing-xs);
 }
 
-/* Genre Selector */
+/* Selettore generi con autocomplete nel form di aggiunta libro */
 .genre-selector {
     position: relative;
 }
@@ -1303,7 +1303,7 @@ ul, ol {
     color: var(--color-text-muted);
 }
 
-/* User List */
+/* Lista utenti (follower/following del profilo) */
 .user-list {
     display: flex;
     flex-direction: column;
@@ -2408,14 +2408,14 @@ ul, ol {
 }
 
 /* ========================================
-   18. LOAN REQUEST BANNER
+   18. BANNER E CARD RICHIESTE DI PRESTITO
 ======================================== */
 
 /* ═══════════════════════════════════════════════════
-   Loan events — inline cards in chat message flow
+   Eventi prestito — card inline nel flusso messaggi
    ═══════════════════════════════════════════════════ */
 
-/* ── Loan event wrapper (centered in chat) ── */
+/* ── Contenitore evento prestito (centrato nel chat) ── */
 .chat-loan-event {
     display: flex;
     flex-direction: column;
@@ -2429,7 +2429,7 @@ ul, ol {
     margin-top: 4px;
 }
 
-/* ── Loan card (generic) ── */
+/* ── Card prestito (generica) ── */
 .chat-loan-card {
     display: flex;
     align-items: center;
@@ -2504,7 +2504,7 @@ ul, ol {
     margin-top: 2px;
 }
 
-/* ── Card variants ── */
+/* ── Varianti della card per ogni stato del prestito ── */
 .chat-loan-card--success {
     background: rgba(76, 175, 80, .08);
     border-color: rgba(76, 175, 80, .25);
@@ -2544,7 +2544,7 @@ ul, ol {
 }
 
 /* ═══════════════════════════════════════════════════
-   Loan action bar — fixed above chat input
+   Barra azioni prestito — fissa sopra il campo di invio
    ═══════════════════════════════════════════════════ */
 
 #loan-action-bar-wrapper {
@@ -2610,7 +2610,7 @@ ul, ol {
 .loan-action-bar__counter-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 .loan-action-bar__counter-input { -moz-appearance: textfield; }
 
-/* ── Waiting state ── */
+/* ── Stato di attesa (in attesa di risposta alla contro-offerta) ── */
 .loan-action-bar--waiting {
     flex-direction: row;
     align-items: center;
@@ -2634,7 +2634,7 @@ ul, ol {
     50% { opacity: 1; transform: scale(1.2); }
 }
 
-/* ── Action bar buttons ── */
+/* ── Pulsanti della barra azioni prestito ── */
 .loan-btn {
     display: inline-flex;
     align-items: center;
@@ -2691,7 +2691,7 @@ ul, ol {
     flex-shrink: 0;
 }
 
-/* ── Offer Modal ── */
+/* ── Modal per l'offerta di punti cultura ── */
 .offer-modal-overlay {
     position: fixed;
     inset: 0;
@@ -2867,7 +2867,7 @@ ul, ol {
 .offer-modal__submit:hover { background: #3d8ce6; transform: translateY(-1px); }
 .offer-modal__submit:active { transform: translateY(0); }
 
-/* ── Map popup offer button ── */
+/* ── Pulsante offerta nel popup della mappa dei prestiti ── */
 .borrow-popup-offer-btn {
     display: inline-block;
     margin-top: 8px;
@@ -2884,7 +2884,7 @@ ul, ol {
 .borrow-popup-offer-btn:hover { background: #3d8ce6; }
 
 /* --------------------------------------------------------------------------
-   ADMIN — Stats Dashboard
+   ADMIN — Dashboard Statistiche
    -------------------------------------------------------------------------- */
 
 .admin-page {
@@ -2909,7 +2909,7 @@ ul, ol {
     margin-top: 2px;
 }
 
-/* Summary cards */
+/* Schede riepilogative (totale utenti, libri, prestiti, recensioni) */
 .admin-summary {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -2942,7 +2942,7 @@ ul, ol {
     font-weight: 600;
 }
 
-/* Charts grid */
+/* Griglia grafici (distribuzione generi, attività mensile) */
 .admin-charts {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2971,7 +2971,7 @@ ul, ol {
     height: 260px;
 }
 
-/* Table */
+/* Tabella libri più popolari nella dashboard admin */
 .admin-table-section__title {
     font-size: var(--font-lg);
     font-weight: 700;
@@ -3081,7 +3081,7 @@ ul, ol {
     color: var(--color-text-muted);
 }
 
-/* Admin sidebar link accent */
+/* Voce di menu admin nella sidebar (colore primario per distinguerla) */
 .feed-sidebar__link--admin {
     color: var(--color-primary);
 }
@@ -3091,7 +3091,7 @@ ul, ol {
     color: var(--color-primary-light);
 }
 
-/* Search row */
+/* Riga di ricerca e filtri nella tabella admin */
 .admin-search-row {
     display: flex;
     align-items: center;
@@ -3132,7 +3132,7 @@ ul, ol {
     color: var(--color-text-muted);
 }
 
-/* Book detail panel */
+/* Pannello dettaglio libro nella dashboard admin */
 .admin-book-detail {
     display: flex;
     gap: var(--spacing-lg);
@@ -3231,7 +3231,7 @@ ul, ol {
     position: relative;
 }
 
-/* Selected row */
+/* Riga selezionata nella tabella (mostra il dettaglio del libro a destra) */
 .admin-table__row {
     cursor: pointer;
 }
@@ -3241,7 +3241,7 @@ ul, ol {
     outline: 1px solid var(--color-success);
 }
 
-/* Responsive admin */
+/* Adattamenti responsive per la dashboard admin su schermi piccoli */
 @media (max-width: 900px) {
     .admin-summary      { grid-template-columns: repeat(2, 1fr); }
     .admin-charts       { grid-template-columns: 1fr; }

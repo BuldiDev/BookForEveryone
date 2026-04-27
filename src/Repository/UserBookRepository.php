@@ -9,6 +9,9 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
+ * Repository per l'entità UserBook, che registra le interazioni
+ * (like, letto, possiedo fisicamente) tra un utente e un libro.
+ *
  * @extends ServiceEntityRepository<UserBook>
  */
 class UserBookRepository extends ServiceEntityRepository
@@ -18,15 +21,21 @@ class UserBookRepository extends ServiceEntityRepository
         parent::__construct($registry, UserBook::class);
     }
 
+    /**
+     * Trova il record di interazione tra un utente e un libro specifico.
+     * Restituisce null se l'utente non ha ancora interagito con quel libro.
+     */
     public function findByUserAndBook(User $user, Book $book): ?UserBook
     {
         return $this->findOneBy(['user' => $user, 'book' => $book]);
     }
 
     /**
-     * Batch-load UserBook per un utente e più libri in una singola query.
+     * Carica in batch le interazioni di un utente per un set di libri con una singola query.
+     * Evita N query nel loop di rendering delle card del feed.
+     *
      * @param int[] $bookIds
-     * @return array<int, UserBook|null> Indicizzato per book ID
+     * @return array<int, UserBook> Indicizzato per book_id
      */
     public function findByUserForBooks(User $user, array $bookIds): array
     {
@@ -43,6 +52,7 @@ class UserBookRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
+        // Indicizza per book_id per un accesso O(1) nel template
         $indexed = [];
         foreach ($results as $ub) {
             $indexed[$ub->getBook()->getId()] = $ub;
@@ -52,7 +62,8 @@ class UserBookRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trova o crea la relazione UserBook.
+     * Trova il record di interazione o ne crea uno nuovo se non esiste ancora.
+     * Usato nelle azioni rapide (like, letto, possiedo) per garantire la presenza del record.
      */
     public function findOrCreate(User $user, Book $book): UserBook
     {
@@ -67,7 +78,12 @@ class UserBookRepository extends ServiceEntityRepository
         return $userBook;
     }
 
-    /** Tutti i libri letti da un utente */
+    /**
+     * Restituisce tutti i libri segnati come letti da un utente, ordinati per data.
+     * Usato nella sezione "Libri letti" del profilo pubblico.
+     *
+     * @return UserBook[]
+     */
     public function findReadByUser(User $user): array
     {
         return $this->createQueryBuilder('ub')
@@ -80,7 +96,12 @@ class UserBookRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** Tutti i libri posseduti fisicamente */
+    /**
+     * Restituisce tutti i libri posseduti fisicamente da un utente.
+     * Usato nella sezione "Libri posseduti" del profilo e nella ricerca prestiti.
+     *
+     * @return UserBook[]
+     */
     public function findOwnedByUser(User $user): array
     {
         return $this->createQueryBuilder('ub')
@@ -93,7 +114,11 @@ class UserBookRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /** Tutti i libri con like */
+    /**
+     * Restituisce tutti i libri a cui l'utente ha messo "mi piace".
+     *
+     * @return UserBook[]
+     */
     public function findLikedByUser(User $user): array
     {
         return $this->createQueryBuilder('ub')

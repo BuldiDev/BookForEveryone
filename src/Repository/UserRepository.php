@@ -12,6 +12,14 @@ use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
+ * Repository per l'entità User.
+ *
+ * Implementa PasswordUpgraderInterface per aggiornare automaticamente
+ * l'hash della password quando Symfony rileva un algoritmo obsoleto.
+ *
+ * I contatori follower/following e la lista degli ID seguiti sono cachati
+ * in Redis per 120 secondi, perché vengono letti ad ogni rendering del feed.
+ *
  * @extends ServiceEntityRepository<User>
  */
 class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
@@ -23,10 +31,14 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         parent::__construct($registry, User::class);
     }
 
+    /**
+     * Aggiorna l'hash della password nel database.
+     * Chiamato da Symfony quando viene rilevato un algoritmo di hashing obsoleto.
+     */
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
     {
         if (!$user instanceof User) {
-            throw new UnsupportedUserException(sprintf('Instances of "%s" are not supported.', $user::class));
+            throw new UnsupportedUserException(sprintf('Istanze di "%s" non sono supportate.', $user::class));
         }
 
         $user->setPassword($newHashedPassword);
@@ -34,12 +46,19 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
+    /**
+     * Trova un utente per username (case-sensitive).
+     */
     public function findByUsername(string $username): ?User
     {
         return $this->findOneBy(['username' => $username]);
     }
 
-    /** @return User[] */
+    /**
+     * Ricerca utenti per username o nome visualizzato (ricerca parziale LIKE).
+     *
+     * @return User[]
+     */
     public function searchUsers(string $query, int $limit = 20): array
     {
         return $this->createQueryBuilder('u')
@@ -51,14 +70,19 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getResult();
     }
 
-    /** Conta followers e following con query COUNT (niente hydration) */
+    /**
+     * Conta follower e following tramite query COUNT nativa (senza hydration).
+     * Cachato in Redis per 120 secondi per ridurre il carico sul database.
+     *
+     * @return array{followers: int, following: int}
+     */
     public function getProfileCounts(User $user): array
     {
         return $this->cache->get('profile_counts_' . $user->getId(), function (ItemInterface $item) use ($user) {
             $item->expiresAfter(120);
 
             $conn = $this->getEntityManager()->getConnection();
-            $id = $user->getId();
+            $id   = $user->getId();
 
             $followersCount = (int) $conn->fetchOne(
                 'SELECT COUNT(*) FROM user_following WHERE user_target = :id',
@@ -73,12 +97,22 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         });
     }
 
+    /**
+     * Invalida la cache dei contatori di un profilo.
+     * Chiamato dopo ogni operazione di follow/unfollow.
+     */
     public function invalidateProfileCounts(User $user): void
     {
         $this->cache->delete('profile_counts_' . $user->getId());
     }
 
-    /** Restituisce gli ID degli utenti seguiti (niente hydration) */
+    /**
+     * Restituisce gli ID degli utenti seguiti senza hydration (solo scalari).
+     * Cachato in Redis per 120 secondi; usato in ogni rendering del feed
+     * per mostrare il pulsante "Segui / Seguendo" sulle card.
+     *
+     * @return int[]
+     */
     public function getFollowingIds(User $user): array
     {
         return $this->cache->get('following_ids_' . $user->getId(), function (ItemInterface $item) use ($user) {
@@ -93,16 +127,21 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         });
     }
 
+    /**
+     * Invalida la cache degli ID seguiti.
+     * Chiamato dopo ogni operazione di follow/unfollow.
+     */
     public function invalidateFollowingIds(User $user): void
     {
         $this->cache->delete('following_ids_' . $user->getId());
     }
 
     /**
-     * Trova libri che matchano la ricerca, con lista di utenti che li possiedono.
-     * Raggruppato per LIBRO, non per utente.
-     * 
-     * @return array Array of ['book' => Book, 'owners' => [['user' => User, 'distance' => float]]]
+     * Trova gli utenti vicini che possiedono fisicamente un libro che corrisponde alla ricerca.
+     * Usa la formula di Haversine in SQL per calcolare la distanza.
+     * I risultati sono raggruppati per libro, con la lista degli utenti proprietari.
+     *
+     * @return array<int, array{book: \App\Entity\Book, owners: array<int, array{user: User, distance: float}>}>
      */
     public function findNearbyUsersWithBook(
         float $lat,
@@ -113,9 +152,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     ): array {
         $conn = $this->getEntityManager()->getConnection();
 
-        // Trova libri e i loro proprietari con distanza
+        // Query con Haversine per distanza + filtro titolo libro
         $sql = '
-            SELECT 
+            SELECT
                 b.id as book_id,
                 b.title as book_title,
                 b.book_author as book_author,
@@ -143,8 +182,8 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         ';
 
         $params = [
-            'lat' => $lat,
-            'lng' => $lng,
+            'lat'    => $lat,
+            'lng'    => $lng,
             'radius' => $radiusKm,
             'search' => '%' . $bookSearch . '%',
         ];
@@ -155,11 +194,10 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             return [];
         }
 
-        // Carica entità complete
+        // Carica le entità complete in due query batch
         $bookIds = array_unique(array_column($rows, 'book_id'));
         $userIds = array_unique(array_column($rows, 'user_id'));
 
-        // Carica libri
         $books = $this->getEntityManager()->getRepository('App\Entity\Book')
             ->createQueryBuilder('b')
             ->where('b.id IN (:ids)')
@@ -172,7 +210,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             $booksById[$book->getId()] = $book;
         }
 
-        // Carica utenti
         $users = $this->createQueryBuilder('u')
             ->where('u.id IN (:ids)')
             ->setParameter('ids', $userIds)
@@ -184,25 +221,25 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             $usersById[$user->getId()] = $user;
         }
 
-        // Raggruppa per libro
+        // Raggruppa per libro: ogni libro ha la lista dei proprietari con distanza
         $bookGroups = [];
         foreach ($rows as $row) {
             $bookId = $row['book_id'];
-            
+
             if (!isset($bookGroups[$bookId])) {
                 $bookGroups[$bookId] = [
-                    'book' => $booksById[$bookId] ?? null,
-                    'owners' => []
+                    'book'   => $booksById[$bookId] ?? null,
+                    'owners' => [],
                 ];
             }
 
             $bookGroups[$bookId]['owners'][] = [
-                'user' => $usersById[$row['user_id']] ?? null,
-                'distance' => round((float) $row['distance'], 1)
+                'user'     => $usersById[$row['user_id']] ?? null,
+                'distance' => round((float) $row['distance'], 1),
             ];
         }
 
-        // Rimuovi libri senza entità valida
+        // Rimuove eventuali voci senza entità valida (race condition tra SQL e hydration)
         $result = array_filter($bookGroups, fn($item) => $item['book'] !== null);
 
         return array_values($result);

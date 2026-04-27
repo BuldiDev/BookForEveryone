@@ -9,6 +9,8 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
+ * Repository per l'entità Review.
+ *
  * @extends ServiceEntityRepository<Review>
  */
 class ReviewRepository extends ServiceEntityRepository
@@ -18,12 +20,21 @@ class ReviewRepository extends ServiceEntityRepository
         parent::__construct($registry, Review::class);
     }
 
+    /**
+     * Trova la recensione di un utente per un libro specifico.
+     * Usato per aggiornare la recensione esistente invece di crearne una duplicata.
+     */
     public function findByUserAndBook(User $user, Book $book): ?Review
     {
         return $this->findOneBy(['user' => $user, 'book' => $book]);
     }
 
-    /** @return Review[] */
+    /**
+     * Restituisce le recensioni di un libro ordinate per data decrescente.
+     * Usato nella scheda dettaglio del libro e nel pannello espandibile del feed.
+     *
+     * @return Review[]
+     */
     public function getReviewsForBook(Book $book, int $limit = 50): array
     {
         return $this->createQueryBuilder('r')
@@ -36,9 +47,12 @@ class ReviewRepository extends ServiceEntityRepository
     }
 
     /**
-     * Batch-load recensioni dell'utente per un set di libri (1 query).
+     * Carica in batch le recensioni dell'utente per un set di libri con una singola query.
+     * Evita N query nel loop di rendering delle card del feed per mostrare
+     * il voto già assegnato dall'utente su ogni libro.
+     *
      * @param int[] $bookIds
-     * @return array<int, Review>  book_id => Review
+     * @return array<int, Review> Indicizzato per book_id
      */
     public function findByUserForBooks(User $user, array $bookIds): array
     {
@@ -54,6 +68,7 @@ class ReviewRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
 
+        // Indicizza per book_id per un accesso O(1) nel template
         $map = [];
         foreach ($reviews as $review) {
             $map[$review->getBook()->getId()] = $review;
@@ -61,7 +76,10 @@ class ReviewRepository extends ServiceEntityRepository
         return $map;
     }
 
-    /** Media voto per un libro */
+    /**
+     * Calcola la valutazione media di un libro tramite query aggregata.
+     * Alternativa leggera a Book::getAverageRating() quando non si ha l'entità caricata.
+     */
     public function getAverageRatingForBook(Book $book): ?float
     {
         $result = $this->createQueryBuilder('r')
