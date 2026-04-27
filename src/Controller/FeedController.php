@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\BookRepository;
+use App\Repository\ReviewRepository;
 use App\Repository\UserBookRepository;
 use App\Repository\UserRepository;
 use App\Service\FeedHistoryService;
@@ -21,6 +22,7 @@ class FeedController extends AbstractController
         BookRepository $bookRepo,
         UserBookRepository $userBookRepo,
         UserRepository $userRepo,
+        ReviewRepository $reviewRepo,
         SessionInterface $session,
         FeedHistoryService $feedHistory,
     ): Response {
@@ -70,12 +72,14 @@ class FeedController extends AbstractController
         $userBooks = $userBookRepo->findByUserForBooks($user, $bookIds);
         $bookStats = $bookRepo->getBookStats($bookIds);
         $followingIds = $userRepo->getFollowingIds($user);
+        $userReviews = $reviewRepo->findByUserForBooks($user, $bookIds);
 
         return $this->render('feed/index.html.twig', [
             'books' => $books,
             'userBooks' => $userBooks,
             'bookStats' => $bookStats,
             'followingIds' => $followingIds,
+            'userReviews' => $userReviews,
             'page' => $page,
             'section' => $section,
         ]);
@@ -87,6 +91,7 @@ class FeedController extends AbstractController
         BookRepository $bookRepo,
         UserBookRepository $userBookRepo,
         UserRepository $userRepo,
+        ReviewRepository $reviewRepo,
         SessionInterface $session,
         FeedHistoryService $feedHistory,
     ): Response {
@@ -133,6 +138,7 @@ class FeedController extends AbstractController
         $userBooks = $userBookRepo->findByUserForBooks($user, $bookIds);
         $bookStats = $bookRepo->getBookStats($bookIds);
         $followingIds = $userRepo->getFollowingIds($user);
+        $userReviews = $reviewRepo->findByUserForBooks($user, $bookIds);
 
         // Renderizza solo gli item del feed
         $html = $this->renderView('feed/_feed_items.html.twig', [
@@ -140,6 +146,7 @@ class FeedController extends AbstractController
             'userBooks' => $userBooks,
             'bookStats' => $bookStats,
             'followingIds' => $followingIds,
+            'userReviews' => $userReviews,
         ]);
 
         return new JsonResponse([

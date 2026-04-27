@@ -4,6 +4,8 @@
 
 {% block page_content %}
 <div class="admin-page">
+
+    {# ── Header ── #}
     <div class="admin-page__header">
         <h1 class="admin-page__title">Statistiche</h1>
         <p class="admin-page__subtitle">Panoramica della piattaforma</p>
@@ -29,37 +31,74 @@
         </div>
     </div>
 
-    {# ── Charts ── #}
+    {# ── Top-10 charts ── #}
     <div class="admin-charts">
         <div class="admin-chart-card">
             <h2 class="admin-chart-card__title">Top 10 — Valutazione media</h2>
-            <div class="admin-chart-card__wrap">
-                <canvas id="chartRating"></canvas>
-            </div>
+            <div class="admin-chart-card__wrap"><canvas id="chartRating"></canvas></div>
         </div>
         <div class="admin-chart-card">
             <h2 class="admin-chart-card__title">Top 10 — Like</h2>
-            <div class="admin-chart-card__wrap">
-                <canvas id="chartLikes"></canvas>
-            </div>
+            <div class="admin-chart-card__wrap"><canvas id="chartLikes"></canvas></div>
         </div>
         <div class="admin-chart-card">
             <h2 class="admin-chart-card__title">Top 10 — Lettori</h2>
-            <div class="admin-chart-card__wrap">
-                <canvas id="chartReaders"></canvas>
-            </div>
+            <div class="admin-chart-card__wrap"><canvas id="chartReaders"></canvas></div>
         </div>
         <div class="admin-chart-card">
             <h2 class="admin-chart-card__title">Top 10 — Recensioni</h2>
-            <div class="admin-chart-card__wrap">
-                <canvas id="chartReviews"></canvas>
-            </div>
+            <div class="admin-chart-card__wrap"><canvas id="chartReviews"></canvas></div>
         </div>
     </div>
 
-    {# ── Table ── #}
+    {# ── Ricerca singolo libro ── #}
     <div class="admin-table-section">
-        <h2 class="admin-table-section__title">Tutti i libri</h2>
+        <div class="admin-search-row">
+            <h2 class="admin-table-section__title">Tutti i libri</h2>
+            <div class="admin-search-box">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="bookSearch" placeholder="Cerca titolo o autore…" autocomplete="off">
+            </div>
+        </div>
+
+        {# Pannello dettaglio libro selezionato #}
+        <div id="bookDetail" class="admin-book-detail" style="display:none">
+            <div class="admin-book-detail__left">
+                <div class="admin-book-detail__cover-wrap">
+                    <img id="detailCover" src="" alt="" class="admin-book-detail__cover" style="display:none">
+                    <div id="detailCoverPlaceholder" class="admin-book-detail__cover-placeholder">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+                    </div>
+                </div>
+                <div class="admin-book-detail__info">
+                    <h3 id="detailTitle" class="admin-book-detail__title"></h3>
+                    <p id="detailAuthor" class="admin-book-detail__author"></p>
+                    <div class="admin-book-detail__metrics">
+                        <div class="admin-detail-metric">
+                            <span id="detailRating" class="admin-detail-metric__value" style="color:#f59e0b">—</span>
+                            <span class="admin-detail-metric__label">Voto</span>
+                        </div>
+                        <div class="admin-detail-metric">
+                            <span id="detailLikes" class="admin-detail-metric__value" style="color:#e07a5f">0</span>
+                            <span class="admin-detail-metric__label">Like</span>
+                        </div>
+                        <div class="admin-detail-metric">
+                            <span id="detailReaders" class="admin-detail-metric__value" style="color:#4a9eff">0</span>
+                            <span class="admin-detail-metric__label">Lettori</span>
+                        </div>
+                        <div class="admin-detail-metric">
+                            <span id="detailReviews" class="admin-detail-metric__value" style="color:#10b981">0</span>
+                            <span class="admin-detail-metric__label">Recensioni</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-book-detail__right">
+                <canvas id="chartDetail"></canvas>
+            </div>
+        </div>
+
+        {# Tabella ── #}
         <div class="admin-table-wrap">
             <table class="admin-table">
                 <thead>
@@ -73,9 +112,18 @@
                         <th class="num">Recensioni</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="bookTableBody">
                     {% for book in bookStats %}
-                    <tr>
+                    <tr class="admin-table__row"
+                        data-search="{{ (book.title ~ ' ' ~ book.book_author)|lower }}"
+                        data-id="{{ book.id }}"
+                        data-title="{{ book.title|e('html_attr') }}"
+                        data-author="{{ book.book_author|e('html_attr') }}"
+                        data-cover="{{ book.cover_url ?? '' }}"
+                        data-rating="{{ book.avg_rating ?? '' }}"
+                        data-likes="{{ book.likes_count }}"
+                        data-readers="{{ book.readers_count }}"
+                        data-reviews="{{ book.reviews_count }}">
                         <td>
                             {% if book.cover_url %}
                                 <img src="{{ book.cover_url }}" alt="" class="admin-table__cover">
@@ -104,29 +152,30 @@
                         <td class="num">{{ book.reviews_count }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="7" style="text-align:center; color: var(--color-text-muted); padding: var(--spacing-xl);">Nessun libro nel database</td></tr>
+                    <tr><td colspan="7" style="text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">Nessun libro nel database</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
+            <p id="noResults" style="display:none;text-align:center;color:var(--color-text-muted);padding:var(--spacing-xl);">Nessun libro trovato</p>
         </div>
     </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
+
     const raw = {{ bookStats|json_encode|raw }};
 
-    const chartDefaults = {
-        type: 'bar',
-        options: {
+    /* ── Opzioni comuni per i grafici orizzontali ── */
+    function hBarOptions() {
+        return {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x } }
-            },
+            animation: { duration: 400 },
+            plugins: { legend: { display: false } },
             scales: {
                 x: {
                     grid: { color: 'rgba(255,255,255,0.06)' },
@@ -137,43 +186,137 @@
                     ticks: {
                         color: '#e8e8e8',
                         font: { size: 11 },
-                        callback: function (val) {
-                            const label = this.getLabelForValue(val);
-                            return label.length > 22 ? label.slice(0, 22) + '…' : label;
+                        callback(val) {
+                            const l = this.getLabelForValue(val);
+                            return l.length > 20 ? l.slice(0, 20) + '…' : l;
                         }
                     }
                 }
             }
-        }
-    };
-
-    function top10(sorted, key) {
-        return sorted.slice(0, 10);
+        };
     }
 
-    function makeChart(id, data, key, color) {
-        const sorted = [...data].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0)).slice(0, 10);
-        const labels  = sorted.map(b => b.title);
-        const values  = sorted.map(b => b[key] ?? 0);
-        new Chart(document.getElementById(id), {
-            ...chartDefaults,
+    function makeTopChart(canvasId, key, color) {
+        const sorted = [...raw]
+            .filter(b => (b[key] ?? 0) > 0)
+            .sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0))
+            .slice(0, 10);
+
+        new Chart(document.getElementById(canvasId), {
+            type: 'bar',
             data: {
-                labels,
+                labels: sorted.map(b => b.title),
                 datasets: [{
-                    data: values,
-                    backgroundColor: color + 'cc',
+                    data: sorted.map(b => b[key] ?? 0),
+                    backgroundColor: color + 'b3',
                     borderColor: color,
                     borderWidth: 1,
                     borderRadius: 3
                 }]
+            },
+            options: hBarOptions()
+        });
+    }
+
+    makeTopChart('chartRating',  'avg_rating',    '#f59e0b');
+    makeTopChart('chartLikes',   'likes_count',   '#e07a5f');
+    makeTopChart('chartReaders', 'readers_count', '#4a9eff');
+    makeTopChart('chartReviews', 'reviews_count', '#10b981');
+
+    /* ── Ricerca + dettaglio singolo libro ── */
+    const searchInput   = document.getElementById('bookSearch');
+    const rows          = document.querySelectorAll('#bookTableBody .admin-table__row');
+    const noResults     = document.getElementById('noResults');
+    const bookDetail    = document.getElementById('bookDetail');
+    let   detailChart   = null;
+    let   selectedRow   = null;
+
+    function showDetail(row) {
+        if (selectedRow) selectedRow.classList.remove('is-selected');
+        selectedRow = row;
+        row.classList.add('is-selected');
+
+        const title   = row.dataset.title;
+        const author  = row.dataset.author;
+        const cover   = row.dataset.cover;
+        const rating  = row.dataset.rating;
+        const likes   = parseInt(row.dataset.likes);
+        const readers = parseInt(row.dataset.readers);
+        const reviews = parseInt(row.dataset.reviews);
+
+        document.getElementById('detailTitle').textContent  = title;
+        document.getElementById('detailAuthor').textContent = author;
+        document.getElementById('detailRating').textContent = rating ? '★ ' + rating : '—';
+        document.getElementById('detailLikes').textContent   = likes;
+        document.getElementById('detailReaders').textContent = readers;
+        document.getElementById('detailReviews').textContent = reviews;
+
+        const img         = document.getElementById('detailCover');
+        const placeholder = document.getElementById('detailCoverPlaceholder');
+        if (cover) {
+            img.src = cover;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+        } else {
+            img.style.display = 'none';
+            placeholder.style.display = 'flex';
+        }
+
+        bookDetail.style.display = 'flex';
+
+        /* Grafico dettaglio */
+        if (detailChart) detailChart.destroy();
+        detailChart = new Chart(document.getElementById('chartDetail'), {
+            type: 'bar',
+            data: {
+                labels: ['Like', 'Lettori', 'Recensioni'],
+                datasets: [{
+                    data: [likes, readers, reviews],
+                    backgroundColor: ['#e07a5fb3', '#4a9effb3', '#10b981b3'],
+                    borderColor:     ['#e07a5f',   '#4a9eff',   '#10b981'],
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 300 },
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#e8e8e8', font: { size: 12 } } },
+                    y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#8b8b8b', font: { size: 11 }, precision: 0 } }
+                }
             }
         });
     }
 
-    makeChart('chartRating',  raw, 'avg_rating',    '#f59e0b');
-    makeChart('chartLikes',   raw, 'likes_count',   '#e07a5f');
-    makeChart('chartReaders', raw, 'readers_count', '#4a9eff');
-    makeChart('chartReviews', raw, 'reviews_count', '#10b981');
-})();
+    rows.forEach(row => {
+        row.addEventListener('click', () => showDetail(row));
+    });
+
+    searchInput.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        let visible = 0;
+
+        rows.forEach(row => {
+            const match = !q || row.dataset.search.includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+
+        noResults.style.display = visible === 0 ? 'block' : 'none';
+
+        /* Se c'è un solo risultato, mostra automaticamente il dettaglio */
+        if (visible === 1) {
+            const single = [...rows].find(r => r.style.display !== 'none');
+            if (single) showDetail(single);
+        } else if (!q) {
+            bookDetail.style.display = 'none';
+            if (selectedRow) { selectedRow.classList.remove('is-selected'); selectedRow = null; }
+        }
+    });
+
+});
 </script>
 {% endblock %}

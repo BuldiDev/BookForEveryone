@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Book;
 use App\Entity\BookPhoto;
+use App\Entity\Review;
 use App\Entity\UserBook;
 use App\Form\BookFormType;
 use App\Repository\BookRepository;
@@ -263,6 +264,60 @@ class BookController extends AbstractController
             'hasRead' => $userBook->hasRead(),
             'ownsPhysically' => $userBook->ownsPhysically(),
             'likesCount' => $book->getLikesCount(),
+        ]);
+    }
+
+    #[Route('/book/{id}/reviews', name: 'app_book_reviews', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function reviews(Book $book, ReviewRepository $reviewRepo): JsonResponse
+    {
+        $reviews = $reviewRepo->getReviewsForBook($book, 30);
+
+        return new JsonResponse([
+            'avgRating'    => $book->getAverageRating(),
+            'reviewsCount' => $book->getReviewsCount(),
+            'reviews'      => array_map(static fn($r) => [
+                'username'    => $r->getUser()->getUsername(),
+                'displayName' => $r->getUser()->getDisplayName(),
+                'rating'      => $r->getRating(),
+                'content'     => $r->getContent(),
+            ], $reviews),
+        ]);
+    }
+
+    #[Route('/book/{id}/review', name: 'app_book_review', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function review(
+        Book $book,
+        Request $request,
+        ReviewRepository $reviewRepo,
+        EntityManagerInterface $em,
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('ROLE_USER');
+
+        $rating = (int) $request->request->get('rating', 0);
+        if ($rating < 1 || $rating > 5) {
+            return new JsonResponse(['error' => 'Rating non valido'], 400);
+        }
+
+        $user = $this->getUser();
+        $content = trim((string) $request->request->get('content', ''));
+
+        $review = $reviewRepo->findByUserAndBook($user, $book);
+        if (!$review) {
+            $review = new Review();
+            $review->setUser($user);
+            $review->setBook($book);
+        }
+
+        $review->setRating($rating);
+        $review->setContent($content !== '' ? $content : null);
+
+        $em->persist($review);
+        $em->flush();
+
+        return new JsonResponse([
+            'rating'       => $review->getRating(),
+            'avgRating'    => $book->getAverageRating(),
+            'reviewsCount' => $book->getReviewsCount(),
         ]);
     }
 }

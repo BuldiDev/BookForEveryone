@@ -35,6 +35,32 @@ class ReviewRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Batch-load recensioni dell'utente per un set di libri (1 query).
+     * @param int[] $bookIds
+     * @return array<int, Review>  book_id => Review
+     */
+    public function findByUserForBooks(User $user, array $bookIds): array
+    {
+        if (empty($bookIds)) {
+            return [];
+        }
+
+        $reviews = $this->createQueryBuilder('r')
+            ->where('r.user = :user')
+            ->andWhere('r.book IN (:bookIds)')
+            ->setParameter('user', $user)
+            ->setParameter('bookIds', $bookIds)
+            ->getQuery()
+            ->getResult();
+
+        $map = [];
+        foreach ($reviews as $review) {
+            $map[$review->getBook()->getId()] = $review;
+        }
+        return $map;
+    }
+
     /** Media voto per un libro */
     public function getAverageRatingForBook(Book $book): ?float
     {

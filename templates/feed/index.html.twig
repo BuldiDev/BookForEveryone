@@ -15,7 +15,7 @@
         <div class="feed-scroll" id="feed" data-section="{{ section }}">
             {% for book in books %}
                 <div class="feed-item" data-book-id="{{ book.id }}" data-index="{{ loop.index0 }}">
-                    {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null, 'stats': bookStats[book.id] ?? {avg_rating: null, likes_count: 0}, 'followingIds': followingIds} %}
+                    {% include 'components/feed_item.html.twig' with {'book': book, 'user_book': userBooks[book.id] ?? null, 'stats': bookStats[book.id] ?? {avg_rating: null, likes_count: 0}, 'followingIds': followingIds, 'user_review': userReviews[book.id] ?? null} %}
                 </div>
             {% else %}
                 <div class="feed-item">

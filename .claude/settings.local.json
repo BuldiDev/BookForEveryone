@@ -2,7 +2,26 @@
   "permissions": {
     "allow": [
       "Bash(xargs ls *)",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "PowerShell(wsl --shutdown)",
+      "PowerShell(& \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\" 2>&1)",
+      "Bash(docker info *)",
+      "Bash(break)",
+      "Bash(taskkill /F /IM \"Docker Desktop.exe\")",
+      "PowerShell(Stop-Process -Name \"Docker Desktop\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Name \"com.docker.backend\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Name \"dockerd\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(net stop com.docker.service 2>&1)",
+      "PowerShell(net start com.docker.service 2>&1)",
+      "PowerShell(wsl --list --verbose 2>&1)",
+      "PowerShell(wsl --import-in-place docker-desktop \"C:\\\\Users\\\\balda\\\\AppData\\\\Local\\\\Docker\\\\wsl\\\\main\\\\ext4.vhdx\" 2>&1)",
+      "PowerShell(wsl --import-in-place docker-desktop-data \"C:\\\\Users\\\\balda\\\\AppData\\\\Local\\\\Docker\\\\wsl\\\\disk\\\\docker_data.vhdx\" 2>&1)",
+      "PowerShell(Get-Service | Where-Object { $_.Name -match \"mysql|mariadb\" } 2>&1)",
+      "Bash(mysql -u root -proot -e \"SHOW DATABASES;\")",
+      "Bash(mariadb -u root -proot -e \"SHOW DATABASES;\")",
+      "PowerShell(Select-String -Pattern \"Hyper-V|virtualiz\" -CaseSensitive:$false 2>&1)",
+      "PowerShell(Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\")",
+      "Bash(grep -n \"Admin sidebar link\\\\|Responsive admin\\\\|^$\" \"c:/Users/balda/Desktop/Codice/TESI/BookForEveryone/public/css/app.css\")"
     ]
   }
 }

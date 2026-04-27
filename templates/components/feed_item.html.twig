@@ -25,6 +25,21 @@
         {% endif %}
     </div>
 
+    {# Pannello recensione #}
+    <div class="feed-card__review-panel" id="review-{{ book.id }}">
+        <button class="review-panel__close" data-close-review="{{ book.id }}">×</button>
+        <p class="review-panel__heading">La tua recensione</p>
+        <div class="review-panel__stars" data-selected-rating="{{ user_review ? user_review.rating : 0 }}">
+            {% for i in 1..5 %}
+                <button type="button" class="review-star {% if user_review and i <= user_review.rating %}is-active{% endif %}" data-star="{{ i }}">★</button>
+            {% endfor %}
+        </div>
+        <textarea class="review-panel__text" placeholder="Commento (opzionale)…" rows="2">{{ user_review ? (user_review.content ?? '') : '' }}</textarea>
+        <button type="button" class="review-panel__submit" data-book="{{ book.id }}">
+            {% if user_review %}Aggiorna recensione{% else %}Invia recensione{% endif %}
+        </button>
+    </div>
+
     {# Pannello descrizione completa #}
     <div class="feed-card__description-panel" id="desc-{{ book.id }}">
         <button class="description-close" data-close-desc="{{ book.id }}">X</button>
@@ -48,6 +63,16 @@
                 Generi: {% for genre in book.genres %}{{ genre.name }}{% if not loop.last %}, {% endif %}{% endfor %}
             </p>
         {% endif %}
+
+        {# Recensioni utenti — caricate lazy al primo open #}
+        <div class="desc-reviews" id="desc-reviews-{{ book.id }}" data-book="{{ book.id }}" data-loaded="false">
+            <div class="desc-reviews__header">
+                <span class="desc-reviews__title">Recensioni</span>
+            </div>
+            <div class="desc-reviews__list">
+                <p class="desc-reviews__placeholder">Apri il pannello per caricare le recensioni</p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -107,6 +132,16 @@
             <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>
         </span>
         <span class="feed-action__label">Info</span>
+    </button>
+
+    <button class="feed-action {% if user_review %}feed-action--reviewed{% endif %} js-action-review"
+            data-book="{{ book.id }}"
+            data-current-rating="{{ user_review ? user_review.rating : 0 }}"
+            data-current-content="{{ user_review ? (user_review.content ?? '') : '' }}">
+        <span class="feed-action__icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </span>
+        <span class="feed-action__label">{% if user_review %}{{ user_review.rating }}★{% else %}Vota{% endif %}</span>
     </button>
 
     <button class="feed-action"

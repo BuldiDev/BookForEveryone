@@ -19,13 +19,15 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Feed: pannello descrizione (toggle)
+// Feed: pannello descrizione (toggle) + caricamento lazy recensioni
 document.addEventListener('click', (e) => {
     const descBtn = e.target.closest('.js-action-description');
     if (descBtn) {
         const bookId = descBtn.dataset.book;
-        const panel = document.getElementById('desc-' + bookId);
-        if (panel) panel.classList.toggle('is-open');
+        const panel  = document.getElementById('desc-' + bookId);
+        if (!panel) return;
+        panel.classList.toggle('is-open');
+        if (panel.classList.contains('is-open')) loadReviews(bookId);
     }
 
     const closeBtn = e.target.closest('[data-close-desc]');
@@ -35,6 +37,46 @@ document.addEventListener('click', (e) => {
         if (panel) panel.classList.remove('is-open');
     }
 });
+
+function loadReviews(bookId) {
+    const container = document.getElementById('desc-reviews-' + bookId);
+    if (!container || container.dataset.loaded === 'true') return;
+
+    const list = container.querySelector('.desc-reviews__list');
+    list.innerHTML = '<p class="desc-reviews__placeholder">Caricamento…</p>';
+
+    fetch(`/book/${bookId}/reviews`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+            container.dataset.loaded = 'true';
+
+            // Aggiorna header con media e conteggio
+            const header = container.querySelector('.desc-reviews__header');
+            if (data.avgRating) {
+                header.innerHTML = `<span class="desc-reviews__title">Recensioni</span><span class="desc-reviews__avg">★ ${data.avgRating} <small>(${data.reviewsCount})</small></span>`;
+            } else {
+                header.innerHTML = `<span class="desc-reviews__title">Recensioni</span>`;
+            }
+
+            if (!data.reviews.length) {
+                list.innerHTML = '<p class="desc-reviews__placeholder">Nessuna recensione ancora.</p>';
+                return;
+            }
+
+            list.innerHTML = data.reviews.map(r => `
+                <div class="desc-review-item">
+                    <div class="desc-review-item__header">
+                        <span class="desc-review-item__user">@${r.displayName}</span>
+                        <span class="desc-review-item__rating">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                    </div>
+                    ${r.content ? `<p class="desc-review-item__text">${r.content}</p>` : ''}
+                </div>
+            `).join('');
+        })
+        .catch(() => {
+            list.innerHTML = '<p class="desc-reviews__placeholder">Errore nel caricamento.</p>';
+        });
+}
 
 // Feed: azioni (like, letto, posseggo) via fetch
 document.addEventListener('click', (e) => {
@@ -454,3 +496,122 @@ function initBookAddForm() {
 // Init on load and on Turbo navigation
 document.addEventListener('DOMContentLoaded', initBookAddForm);
 document.addEventListener('turbo:load', initBookAddForm);
+
+// ========== REVIEW PANEL ==========
+
+// Hover stelle: evidenzia dalla 1 fino alla stella sotto il cursore
+document.addEventListener('mouseover', (e) => {
+    const star = e.target.closest('.review-star');
+    if (!star) return;
+    const container = star.closest('.review-panel__stars');
+    if (!container) return;
+    const hoverRating = parseInt(star.dataset.star);
+    container.querySelectorAll('.review-star').forEach((s, i) => {
+        s.classList.toggle('is-hover', i < hoverRating);
+    });
+});
+
+document.addEventListener('mouseout', (e) => {
+    const star = e.target.closest('.review-star');
+    if (!star) return;
+    const container = star.closest('.review-panel__stars');
+    if (!container) return;
+    container.querySelectorAll('.review-star').forEach(s => s.classList.remove('is-hover'));
+});
+
+document.addEventListener('click', (e) => {
+
+    // Apri/chiudi pannello
+    const reviewBtn = e.target.closest('.js-action-review');
+    if (reviewBtn) {
+        const bookId = reviewBtn.dataset.book;
+        const panel  = document.getElementById('review-' + bookId);
+        if (!panel) return;
+
+        // Chiudi pannello descrizione se aperto
+        const descPanel = document.getElementById('desc-' + bookId);
+        if (descPanel) descPanel.classList.remove('is-open');
+
+        panel.classList.toggle('is-open');
+        return;
+    }
+
+    // Chiudi con il pulsante ×
+    const closeBtn = e.target.closest('[data-close-review]');
+    if (closeBtn) {
+        const panel = document.getElementById('review-' + closeBtn.dataset.closeReview);
+        if (panel) panel.classList.remove('is-open');
+        return;
+    }
+
+    // Click su una stella
+    const star = e.target.closest('.review-star');
+    if (star) {
+        const starsContainer = star.closest('.review-panel__stars');
+        if (!starsContainer) return;
+        const rating = parseInt(star.dataset.star);
+        starsContainer.dataset.selectedRating = rating;
+        starsContainer.querySelectorAll('.review-star').forEach((s, i) => {
+            s.classList.toggle('is-active', i < rating);
+        });
+        return;
+    }
+
+    // Submit recensione
+    const submitBtn = e.target.closest('.review-panel__submit');
+    if (submitBtn) {
+        const panel   = submitBtn.closest('.feed-card__review-panel');
+        if (!panel) return;
+        const bookId  = submitBtn.dataset.book;
+        const starsEl = panel.querySelector('.review-panel__stars');
+        const rating  = parseInt(starsEl?.dataset.selectedRating || 0);
+        const content = panel.querySelector('.review-panel__text')?.value || '';
+
+        if (rating === 0) {
+            starsEl.classList.add('review-stars--shake');
+            setTimeout(() => starsEl.classList.remove('review-stars--shake'), 400);
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Invio…';
+
+        const formData = new FormData();
+        formData.append('rating', rating);
+        formData.append('content', content);
+
+        fetch(`/book/${bookId}/review`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            panel.classList.remove('is-open');
+
+            // Aggiorna pulsante nel feed
+            const btn = document.querySelector(`.js-action-review[data-book="${bookId}"]`);
+            if (btn) {
+                btn.classList.add('feed-action--reviewed');
+                const label = btn.querySelector('.feed-action__label');
+                if (label) label.textContent = rating + '★';
+                btn.dataset.currentRating  = rating;
+                btn.dataset.currentContent = content;
+            }
+
+            // Aggiorna testo submit per future modifiche
+            submitBtn.textContent = 'Aggiorna recensione';
+            submitBtn.disabled = false;
+
+            // Aggiorna valutazione media visibile nella card
+            if (data.avgRating) {
+                const ratingEl = document.querySelector(`.feed-card__rating[data-book="${bookId}"]`);
+                if (ratingEl) ratingEl.textContent = data.avgRating + '/5';
+            }
+        })
+        .catch(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Riprova';
+        });
+    }
+});
