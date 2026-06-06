@@ -20,12 +20,25 @@ Apri [http://localhost:8000](http://localhost:8000)
 
 Tutti gli utenti di test condividono la password `prova`.
 
-**Ricreare il database da zero**
+**Primo avvio o ricostruzione da zero**
+
+Su un'immagine appena costruita la cartella `vendor/` (montata come volume Docker) è
+vuota: le dipendenze PHP vanno installate **prima** di popolare il database, altrimenti
+`bin/console` fallisce con *"Symfony Runtime is missing"*.
 
 ```bash
 docker-compose up -d --build
+docker compose exec php composer install
 .\setup-database.bat
 ```
+
+> ⏳ **Richiede qualche minuto.** Lo script crea 1.000 utenti e poi scarica 50 libri con
+> le relative copertine dall'API di Open Library: la fase *"Popolamento libri"* può restare
+> ferma su `0/50` per un po' (sta facendo le chiamate di rete) — è normale, lascia finire.
+>
+> Nota: `.\setup-database.bat` applica le migrazioni (inclusa quella del consenso privacy)
+> e ricarica i dati di test. Se vuoi solo aggiornare lo schema senza perdere i dati,
+> esegui invece `docker compose exec php php bin/console doctrine:migrations:migrate`.
 
 ## Stack tecnologico
 

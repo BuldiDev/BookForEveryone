@@ -160,6 +160,8 @@ class PopulateUsersCommand extends Command
             $fixedUser->setDisplayName('BookForEveryone');
             $fixedUser->setIsVerified(true);
             $fixedUser->setOnboardingCompleted(true);
+            // Account dimostrativo: è anche admin, così può accedere alla dashboard statistiche
+            $fixedUser->setIsAdmin(true);
             $fixedUser->addCulturePoints(1000);
             $fixedUser->setBio('Account ufficiale BookForEveryone 📚');
 

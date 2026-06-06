@@ -1,0 +1,28 @@
+# Configurazione di LiipImagineBundle: generazione di miniature/anteprime.
+#
+# Le miniature vengono generate "on-demand" alla prima richiesta dell'URL filtrato
+# e poi salvate in cache sotto public/media/cache/<filtro>/..., così le richieste
+# successive servono direttamente il file già ridotto, senza rielaborarlo.
+liip_imagine:
+    # Estensione PHP usata per l'elaborazione delle immagini (gd è installata nel container)
+    driver: "gd"
+
+    # Integrazione Twig in modalità "lazy": il filtro imagine_filter genera l'URL della
+    # miniatura senza verificarne l'esistenza a ogni render (più veloce, modalità consigliata).
+    twig:
+        mode: lazy
+
+    filter_sets:
+        # Miniatura quadrata per la galleria delle foto caricate dagli utenti.
+        # mode "inset": l'immagine viene ridotta mantenendo le proporzioni, senza ritaglio.
+        photo_thumb:
+            quality: 80
+            filters:
+                thumbnail: { size: [400, 400], mode: inset }
+
+        # Miniatura in formato copertina (proporzioni 2:3) per liste e anteprime.
+        # mode "outbound": ritaglia per riempire esattamente le dimensioni richieste.
+        book_thumb:
+            quality: 80
+            filters:
+                thumbnail: { size: [200, 300], mode: outbound }

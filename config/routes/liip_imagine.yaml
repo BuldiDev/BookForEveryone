@@ -1,0 +1,4 @@
+# Rotta interna di LiipImagineBundle che intercetta le richieste alle miniature
+# non ancora generate (/media/cache/resolve/...), le crea al volo e poi le mette in cache.
+_liip_imagine:
+    resource: "@LiipImagineBundle/Resources/config/routing.yaml"

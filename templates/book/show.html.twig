@@ -71,7 +71,7 @@
             <div class="user-photos-grid">
                 {% for photo in book.photos %}
                     <div class="user-photo-card">
-                        <img src="{{ photo.imageUrl }}" alt="{{ photo.caption ?? book.title }}" class="user-photo-card__img">
+                        <img src="{{ photo.imageUrl | imagine_filter('photo_thumb') }}" alt="{{ photo.caption ?? book.title }}" class="user-photo-card__img" loading="lazy">
                         {% if photo.caption %}
                             <p class="user-photo-card__caption">{{ photo.caption }}</p>
                         {% endif %}

@@ -36,6 +36,9 @@ security:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
         - { path: ^/explore, roles: PUBLIC_ACCESS }
+        # Generazione/servizio delle miniature: pubblico, come lo sono già le immagini
+        # originali servite da nginx come file statici sotto /uploads.
+        - { path: ^/media/cache, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/, roles: ROLE_USER }
 

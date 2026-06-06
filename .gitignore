@@ -19,6 +19,11 @@
 /assets/vendor/
 ###< symfony/asset-mapper ###
 
+###> liip/imagine-bundle ###
+# Miniature generate on-demand: cache, da non versionare
+/public/media/cache/
+###< liip/imagine-bundle ###
+
 ###> docker ###
 # Ignora solo il contenuto della cartella data, non la struttura
 /docker/db/data/*
