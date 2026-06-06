@@ -106,9 +106,9 @@ La sezione statistiche offre una panoramica aggregata dell'attività della piatt
 
 ## Note operative
 
-| Operazione     | Comando                               |
-|----------------|---------------------------------------|
-| Avvio          | `docker-compose up -d`                |
-| Arresto        | `docker-compose down`                 |
+| Operazione     | Comando                                           |
+|----------------|---------------------------------------------------|
+| Avvio          | `docker-compose up -d`                            |
+| Arresto        | `docker-compose down`                             |
 | Reset database | `docker-compose down -v` → `.\setup-database.bat` |
-| Dati           | Persistiti in `docker/db/data/`       |
+| Dati           | Persistiti in `docker/db/data/`                   |
