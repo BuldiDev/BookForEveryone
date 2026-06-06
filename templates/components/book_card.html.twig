@@ -1,7 +1,7 @@
 {# Card libro per liste e ricerca #}
 <a href="{{ path('app_book_show', {id: book.id}) }}" class="book-card">
     {% if book.coverUrl %}
-        <img src="{{ book.coverUrl }}" alt="{{ book.title }}" class="book-card__cover">
+        <img src="{{ book.coverUrl }}" alt="Copertina di {{ book.title }}" class="book-card__cover">
     {% else %}
         <div class="book-card__cover" style="background: var(--color-primary-light); display: flex; align-items: center; justify-content: center; color: #fff; font-size: var(--font-sm); text-align: center; padding: var(--spacing-sm);">
             {{ book.title }}

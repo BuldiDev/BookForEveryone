@@ -3301,3 +3301,43 @@ ul, ol {
     .admin-page    { padding: var(--spacing-md); }
     .admin-book-detail__left { flex-direction: column; }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Accessibilità
+   - .skip-link: link "Salta al contenuto" nascosto fuori schermo, reso visibile
+     solo quando riceve il focus da tastiera (utile per chi naviga senza mouse).
+   - :focus-visible: indicatore di focus ben visibile su tutti gli elementi
+     interattivi, mostrato solo durante la navigazione da tastiera.
+   ────────────────────────────────────────────────────────────────────────── */
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 1000;
+    padding: 10px 16px;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 0 0 var(--radius-sm) 0;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    left: 0;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Il contenuto principale riceve il focus dallo skip-link ma senza bordo visibile */
+.app-content:focus,
+.app-content:focus-visible {
+    outline: none;
+}

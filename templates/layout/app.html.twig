@@ -11,9 +11,9 @@
 {% block body %}
 <div class="app-layout">
     {# Sidebar sinistra (desktop) #}
-    <aside class="feed-sidebar">
+    <aside class="feed-sidebar" aria-label="Barra laterale">
         <div class="feed-sidebar__logo">BookForEveryone</div>
-        <nav class="feed-sidebar__nav">
+        <nav class="feed-sidebar__nav" aria-label="Navigazione principale">
             <a href="{{ path('app_feed') }}" class="feed-sidebar__link {{ app.request.attributes.get('_route') == 'app_feed' ? 'is-active' : '' }}">
                 <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
                 <span>Per te</span>
@@ -72,11 +72,12 @@
         {% endif %}
     </aside>
 
-    {# Contenuto pagina #}
-    <main class="app-content">
+    {# Contenuto pagina. id + tabindex consentono al link "Salta al contenuto" di
+       portare qui il focus da tastiera. #}
+    <main class="app-content" id="main-content" tabindex="-1">
         {# Badge punti cultura #}
-        <div class="culture-badge">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+        <div class="culture-badge" aria-label="Punti Cultura: {{ app.user.culturePoints }}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
             <span>{{ app.user.culturePoints }}</span>
         </div>
         {% block page_content %}{% endblock %}
@@ -85,7 +86,7 @@
 {% endblock %}
 
 {% block navbar %}
-<nav class="navbar-bottom">
+<nav class="navbar-bottom" aria-label="Navigazione">
     <a href="{{ path('app_feed') }}" class="navbar-bottom__item {{ app.request.attributes.get('_route') == 'app_feed' ? 'is-active' : '' }}">
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
         <span>Feed</span>

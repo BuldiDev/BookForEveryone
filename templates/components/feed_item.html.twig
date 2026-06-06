@@ -11,9 +11,9 @@
 {# Card verticale con copertina #}
 <div class="feed-card">
     {% if book.coverUrl %}
-        <img src="{{ book.coverUrl }}" alt="{{ book.title }}" class="feed-card__cover">
+        <img src="{{ book.coverUrl }}" alt="Copertina di {{ book.title }}" class="feed-card__cover">
     {% elseif book.photos|length > 0 %}
-        <img src="{{ book.photos|first.imageUrl }}" alt="{{ book.title }}" class="feed-card__cover">
+        <img src="{{ book.photos|first.imageUrl }}" alt="Copertina di {{ book.title }}" class="feed-card__cover">
     {% else %}
         <div class="feed-card__placeholder">{{ book.title }}</div>
     {% endif %}
@@ -35,11 +35,11 @@
 
     {# Pannello recensione #}
     <div class="feed-card__review-panel" id="review-{{ book.id }}">
-        <button class="review-panel__close" data-close-review="{{ book.id }}">×</button>
+        <button type="button" class="review-panel__close" data-close-review="{{ book.id }}" aria-label="Chiudi recensione">×</button>
         <p class="review-panel__heading">La tua recensione</p>
         <div class="review-panel__stars" data-selected-rating="{{ user_review ? user_review.rating : 0 }}">
             {% for i in 1..5 %}
-                <button type="button" class="review-star {% if user_review and i <= user_review.rating %}is-active{% endif %}" data-star="{{ i }}">★</button>
+                <button type="button" class="review-star {% if user_review and i <= user_review.rating %}is-active{% endif %}" data-star="{{ i }}" aria-label="{{ i }} {{ i == 1 ? 'stella' : 'stelle' }}">★</button>
             {% endfor %}
         </div>
         <textarea class="review-panel__text" placeholder="Commento (opzionale)…" rows="2">{{ user_review ? (user_review.content ?? '') : '' }}</textarea>
@@ -50,7 +50,7 @@
 
     {# Pannello descrizione completa #}
     <div class="feed-card__description-panel" id="desc-{{ book.id }}">
-        <button class="description-close" data-close-desc="{{ book.id }}">X</button>
+        <button type="button" class="description-close" data-close-desc="{{ book.id }}" aria-label="Chiudi dettagli">X</button>
         <p style="font-size: var(--font-sm); color: rgba(255,255,255,0.5); margin-bottom: var(--spacing-sm);">Consigliato da <a href="{{ path('app_profile', {username: book.addedBy.username}) }}" style="color: var(--color-primary); text-decoration: none;">@{{ book.addedBy.username }}</a></p>
         <h2>{{ book.title }}</h2>
         <p class="text-muted mb-md" style="color: rgba(255,255,255,0.6);">{{ book.bookAuthor }}{% if book.publicationYear %} - {{ book.publicationYear }}{% endif %}</p>
@@ -96,13 +96,15 @@
             {% endif %}
         </a>
         {% if app.user and app.user != book.addedBy %}
-            <button type="button" 
+            <button type="button"
                     class="feed-follow-btn {% if book.addedBy.id in followingIds %}feed-follow-btn--following{% endif %}"
                     data-action="follow"
                     data-user-id="{{ book.addedBy.id }}"
-                    data-csrf="{{ csrf_token('follow' ~ book.addedBy.id) }}">
+                    data-csrf="{{ csrf_token('follow' ~ book.addedBy.id) }}"
+                    aria-pressed="{{ book.addedBy.id in followingIds ? 'true' : 'false' }}"
+                    aria-label="{{ book.addedBy.id in followingIds ? 'Smetti di seguire' : 'Segui' }} {{ book.addedBy.displayName }}">
                 {% if book.addedBy.id in followingIds %}
-                    <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
                 {% else %}
                     +
                 {% endif %}
@@ -110,25 +112,29 @@
         {% endif %}
     </div>
 
-    <button class="feed-action {% if user_book and user_book.liked %}feed-action--liked{% endif %}"
-            data-action="like" data-book="{{ book.id }}">
-        <span class="feed-action__icon">
+    <button type="button" class="feed-action {% if user_book and user_book.liked %}feed-action--liked{% endif %}"
+            data-action="like" data-book="{{ book.id }}"
+            aria-pressed="{{ user_book and user_book.liked ? 'true' : 'false' }}"
+            aria-label="Mi piace">
+        <span class="feed-action__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         </span>
         <span class="feed-action__label">{{ stats.likes_count }}</span>
     </button>
 
-    <button class="feed-action {% if user_book and user_book.hasRead %}feed-action--read{% endif %}"
-            data-action="read" data-book="{{ book.id }}">
-        <span class="feed-action__icon">
+    <button type="button" class="feed-action {% if user_book and user_book.hasRead %}feed-action--read{% endif %}"
+            data-action="read" data-book="{{ book.id }}"
+            aria-pressed="{{ user_book and user_book.hasRead ? 'true' : 'false' }}">
+        <span class="feed-action__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
         </span>
         <span class="feed-action__label">Letto</span>
     </button>
 
-    <button class="feed-action {% if user_book and user_book.ownsPhysically %}feed-action--own{% endif %}"
-            data-action="own" data-book="{{ book.id }}">
-        <span class="feed-action__icon">
+    <button type="button" class="feed-action {% if user_book and user_book.ownsPhysically %}feed-action--own{% endif %}"
+            data-action="own" data-book="{{ book.id }}"
+            aria-pressed="{{ user_book and user_book.ownsPhysically ? 'true' : 'false' }}">
+        <span class="feed-action__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h5v16z"/></svg>
         </span>
         <span class="feed-action__label">Posseggo</span>
@@ -136,7 +142,7 @@
 
     <button class="feed-action js-action-description"
             data-action="description" data-book="{{ book.id }}">
-        <span class="feed-action__icon">
+        <span class="feed-action__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg>
         </span>
         <span class="feed-action__label">Info</span>
@@ -146,7 +152,7 @@
             data-book="{{ book.id }}"
             data-current-rating="{{ user_review ? user_review.rating : 0 }}"
             data-current-content="{{ user_review ? (user_review.content ?? '') : '' }}">
-        <span class="feed-action__icon">
+        <span class="feed-action__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         </span>
         <span class="feed-action__label">{% if user_review %}{{ user_review.rating }}★{% else %}Vota{% endif %}</span>
@@ -154,7 +160,7 @@
 
     <button class="feed-action"
             data-action="share" data-book="{{ book.id }}">
-        <span class="feed-action__icon">
+        <span class="feed-action__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
         </span>
         <span class="feed-action__label">Condividi</span>

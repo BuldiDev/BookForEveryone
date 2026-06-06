@@ -14,11 +14,15 @@
     {% block stylesheets %}{% endblock %}
 </head>
 <body>
-    {# Messaggi flash di sessione: success, error, warning, info #}
+    {# Link di salto al contenuto: invisibile finché non riceve il focus da tastiera #}
+    <a href="#main-content" class="skip-link">Salta al contenuto</a>
+
+    {# Messaggi flash di sessione: success, error, warning, info.
+       role="alert" fa annunciare il messaggio dagli screen reader appena compare. #}
     {% block flash_messages %}
         {% for label, messages in app.flashes %}
             {% for message in messages %}
-                <div class="flash flash--{{ label }}">{{ message }}</div>
+                <div class="flash flash--{{ label }}" role="alert">{{ message }}</div>
             {% endfor %}
         {% endfor %}
     {% endblock %}

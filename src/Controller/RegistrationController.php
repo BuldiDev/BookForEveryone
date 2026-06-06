@@ -44,6 +44,10 @@ class RegistrationController extends AbstractController
                 $passwordHasher->hashPassword($user, $form->get('plainPassword')->getData())
             );
 
+            // Registra il momento esatto in cui l'utente ha prestato il consenso
+            // al trattamento dei dati personali (la checkbox obbligatoria del form).
+            $user->setPrivacyConsentAt(new \DateTimeImmutable());
+
             $em->persist($user);
             $em->flush();
 

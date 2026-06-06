@@ -4,12 +4,14 @@ namespace App\Form;
 
 use App\Entity\User;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\IsTrue;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Regex;
@@ -72,6 +74,18 @@ class RegistrationFormType extends AbstractType
             // Longitudine GPS: compilata in automatico dalla Geolocation API del browser
             ->add('longitude', HiddenType::class, [
                 'required' => false,
+            ])
+
+            // Consenso al trattamento dei dati personali (inclusa la posizione).
+            // Campo NON mappato: la sua spunta è obbligatoria (IsTrue) per registrarsi,
+            // mentre il momento del consenso viene registrato sull'entità nel controller.
+            ->add('privacyConsent', CheckboxType::class, [
+                'mapped'      => false,
+                'label'       => 'Acconsento al trattamento dei miei dati personali, '
+                    . 'inclusa la posizione geografica, secondo l\'informativa sulla privacy.',
+                'constraints' => [
+                    new IsTrue(message: 'Per registrarti devi accettare il trattamento dei dati personali.'),
+                ],
             ]);
     }
 

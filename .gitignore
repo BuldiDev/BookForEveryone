@@ -25,3 +25,5 @@
 # Ma mantieni il README
 !/docker/db/data/.gitkeep
 ###< docker ###
+
+/.claude/

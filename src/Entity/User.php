@@ -71,6 +71,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    /**
+     * Data e ora in cui l'utente ha prestato il consenso al trattamento dei dati
+     * personali (inclusa la posizione geografica) durante la registrazione.
+     * Registrare il momento del consenso, e non un semplice flag, rende tracciabile
+     * quando è stato espresso, come richiesto in ottica di tutela dei dati personali.
+     */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $privacyConsentAt = null;
+
     /** Se true, l'email dell'utente è stata verificata */
     #[ORM\Column(type: 'boolean')]
     private bool $isVerified = false;
@@ -173,6 +182,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
+
+    public function getPrivacyConsentAt(): ?\DateTimeImmutable { return $this->privacyConsentAt; }
+    public function setPrivacyConsentAt(?\DateTimeImmutable $privacyConsentAt): static { $this->privacyConsentAt = $privacyConsentAt; return $this; }
+
+    /** True se l'utente ha prestato il consenso al trattamento dei dati personali */
+    public function hasGivenPrivacyConsent(): bool { return $this->privacyConsentAt !== null; }
 
     /** Aggiorna automaticamente il timestamp prima di ogni UPDATE su database */
     #[ORM\PreUpdate]
