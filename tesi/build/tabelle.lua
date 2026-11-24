@@ -39,3 +39,12 @@ end
 function Code(c)
   return pandoc.Span({ pandoc.Str(c.text) }, pandoc.Attr("", {}, { ["custom-style"] = "CodiceInLinea" }))
 end
+
+-- Il PHP viene colorato solo se inizia con il tag di apertura: lo si aggiunge qui
+-- e build/pulisci.py lo toglie dal documento finale.
+function CodeBlock(b)
+  if b.classes:includes("php") and not b.text:match("^<%?php") then
+    b.text = "<?php\n" .. b.text
+    return b
+  end
+end

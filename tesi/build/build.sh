@@ -22,8 +22,10 @@ pandoc src/0*.md src/1*.md \
   --metadata lang=it-IT \
   --metadata link-citations=true \
   --metadata reference-section-title="" \
-  --highlight-style monochrome \
+  --highlight-style pygments \
   --output build/bozza.docx
+
+python3 build/pulisci.py build/bozza.docx   # toglie i tag <?php di servizio
 
 /usr/bin/python3 build/finalizza.py build/bozza.docx \
   Tesi_BookForEveryone_AntoninoBaldanza.docx \
