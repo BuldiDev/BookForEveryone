@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Diagrammi della tesi</title>
+<style>
+  body { margin: 0; background: #fff; font-family: "DejaVu Sans", Arial, sans-serif; }
+  svg { display: block; margin: 0 0 40px 0; background: #fff; }
+  text { fill: #0b0b0b; }
+  .t { font-size: 15px; font-weight: 700; }
+  .s { font-size: 12.5px; fill: #52514e; }
+  .l { font-size: 12px; fill: #52514e; }
+  .m { font-size: 12.5px; font-family: "DejaVu Sans Mono", monospace; fill: #0b0b0b; }
+</style>
+</head>
+<body>
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const C = { blu: '#2a78d6', bluL: '#e8f1fc', ar: '#eb6834', arL: '#fdeee7', ve: '#1baf7a', veL: '#e6f6ef',
+            gi: '#eda100', giL: '#fdf4dc', gr: '#52514e', grL: '#f3f2ef', line: '#52514e' };
+function el(name, attrs, parent, text) {
+  const e = document.createElementNS(NS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svg(id, w, h) {
+  const s = el('svg', { id, width: w, height: h, viewBox: `0 0 ${w} ${h}`, xmlns: NS }, document.body);
+  const d = el('defs', {}, s);
+  for (const [n, col] of [['a', C.line], ['ab', C.blu], ['aa', C.ar], ['av', C.ve]]) {
+    const m = el('marker', { id: `${id}-${n}`, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 8, markerHeight: 8, orient: 'auto-start-reverse' }, d);
+    el('path', { d: 'M0,0 L10,5 L0,10 z', fill: col }, m);
+  }
+  return s;
+}
+function box(s, x, y, w, h, title, lines = [], col = 'blu', opt = {}) {
+  el('rect', { x, y, width: w, height: h, rx: opt.rx ?? 8, fill: C[col + 'L'], stroke: C[col], 'stroke-width': 1.5 }, s);
+  const n = lines.length;
+  const top = y + h / 2 - (n * 17) / 2 + (n ? 0 : 5);
+  el('text', { x: x + w / 2, y: top + (n ? 2 : 0), 'text-anchor': 'middle', class: 't' }, s, title);
+  lines.forEach((t, i) => el('text', { x: x + w / 2, y: top + 20 + i * 17, 'text-anchor': 'middle', class: opt.mono ? 'm' : 's' }, s, t));
+}
+function arrow(s, pts, label, opt = {}) {
+  const col = opt.col || 'a';
+  const stroke = { a: C.line, ab: C.blu, aa: C.ar, av: C.ve }[col];
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0] + ',' + p[1]).join(' ');
+  const a = { d, fill: 'none', stroke, 'stroke-width': 1.6, 'marker-end': `url(#${s.id}-${col})` };
+  if (opt.dash) a['stroke-dasharray'] = '6 4';
+  if (opt.both) a['marker-start'] = `url(#${s.id}-${col})`;
+  el('path', a, s);
+  if (label) {
+    const [lx, ly] = opt.at || [(pts[0][0] + pts[pts.length - 1][0]) / 2, (pts[0][1] + pts[pts.length - 1][1]) / 2 - 7];
+    const lines = Array.isArray(label) ? label : [label];
+    lines.forEach((t, i) => {
+      const tx = el('text', { x: lx, y: ly + i * 15, 'text-anchor': opt.anchor || 'middle', class: 'l' }, s, t);
+      tx.setAttribute('paint-order', 'stroke'); tx.setAttribute('stroke', '#fff'); tx.setAttribute('stroke-width', 4);
+    });
+  }
+}
+function txt(s, x, y, t, cls = 's', anchor = 'start') { el('text', { x, y, class: cls, 'text-anchor': anchor, 'paint-order': 'stroke', stroke: '#fff', 'stroke-width': 4 }, s, t); }
+
+/* ───────────── 1. Architettura a container ───────────── */
+{
+  const s = svg('d-architettura', 1120, 600);
+  el('rect', { x: 250, y: 30, width: 640, height: 540, rx: 12, fill: 'none', stroke: C.gr, 'stroke-dasharray': '7 5', 'stroke-width': 1.2 }, s);
+  txt(s, 266, 54, 'Rete virtuale Docker Compose «bookforeveryone»', 's');
+  box(s, 20, 150, 170, 90, 'Browser', ['HTML + Turbo', 'Stimulus, Leaflet'], 'gr');
+  box(s, 290, 150, 170, 90, 'nginx', ['web server', 'porta 8000 → 80'], 'blu');
+  box(s, 540, 150, 190, 90, 'php', ['PHP-FPM 8.4', 'Symfony 8.0'], 'blu');
+  box(s, 290, 400, 170, 90, 'mercure', ['hub SSE', 'porta 3000'], 'ar');
+  box(s, 540, 400, 190, 90, 'redis', ['cache, cronologia feed', 'coda di messaggi'], 've');
+  box(s, 750, 275, 120, 90, 'messenger', ['consumer', 'della coda'], 'blu');
+  box(s, 750, 80, 120, 90, 'database', ['MariaDB', '11.8.3'], 'gi');
+  box(s, 930, 150, 170, 90, 'API esterne', ['Google Books', 'Open Library'], 'gr');
+  arrow(s, [[190, 185], [290, 185]], 'HTTP', { at: [240, 177] });
+  arrow(s, [[460, 195], [540, 195]], 'FastCGI', { at: [500, 187] });
+  arrow(s, [[730, 160], [750, 160]], null);
+  txt(s, 738, 192, 'SQL', 'l', 'start');
+  arrow(s, [[635, 240], [635, 400]], ['cache e', 'Set Redis'], { at: [645, 318], anchor: 'start', col: 'av' });
+  arrow(s, [[730, 420], [810, 420], [810, 365]], 'coda', { at: [790, 440], col: 'av' });
+  arrow(s, [[810, 275], [810, 170]], null);
+  arrow(s, [[560, 240], [420, 400]], ['publish', '(JWT)'], { at: [455, 310], anchor: 'end', col: 'aa' });
+  arrow(s, [[290, 445], [105, 445], [105, 240]], ['Server-Sent Events', '(aggiornamenti push)'], { at: [198, 470], col: 'aa', dash: true });
+  arrow(s, [[690, 150], [690, 58], [1015, 58], [1015, 150]], 'HTTPS (ricerca ISBN)', { at: [1100, 48], anchor: 'end' });
+}
+
+/* ───────────── 2. Schema entità-relazioni ───────────── */
+{
+  const s = svg('d-er', 1120, 760);
+  function ent(x, y, w, name, attrs, col = 'blu') {
+    const h = 34 + attrs.length * 19 + 8;
+    el('rect', { x, y, width: w, height: h, rx: 6, fill: '#fff', stroke: C[col], 'stroke-width': 1.5 }, s);
+    el('path', { d: `M${x},${y + 34} h${w} v-28 a6,6 0 0 0 -6,-6 h-${w - 12} a6,6 0 0 0 -6,6 z`, fill: C[col + 'L'], stroke: C[col], 'stroke-width': 1.5 }, s);
+    el('text', { x: x + w / 2, y: y + 23, 'text-anchor': 'middle', class: 't' }, s, name);
+    attrs.forEach((a, i) => el('text', { x: x + 12, y: y + 54 + i * 19, class: 'm' }, s, a));
+    return h;
+  }
+  ent(440, 20, 240, 'User', ['id  PK', 'email, username  UNIQUE', 'password (hash)', 'displayName, bio, avatarUrl', 'culturePoints', 'latitude, longitude', 'isVerified', 'onboardingCompleted', 'privacyConsentAt']);
+  ent(40, 40, 220, 'Genre', ['id  PK', 'name', 'slug'], 'gi');
+  ent(40, 300, 240, 'Book', ['id  PK', 'isbn', 'title, bookAuthor', 'description', 'publisher, publicationYear', 'pageCount, coverUrl', 'addedBy  FK → User']);
+  ent(440, 300, 240, 'UserBook', ['id  PK', 'user  FK,  book  FK', 'liked', 'hasRead', 'ownsPhysically', 'UNIQUE (user, book)'], 've');
+  ent(40, 560, 220, 'BookPhoto', ['id  PK', 'book  FK', 'uploadedBy  FK → User', 'imageUrl, position'], 'gi');
+  ent(440, 540, 240, 'Review', ['id  PK', 'user  FK,  book  FK', 'rating (1–5)', 'content', 'UNIQUE (user, book)'], 've');
+  ent(840, 40, 240, 'Conversation', ['id  PK', 'createdAt', 'participants  N:M → User'], 'ar');
+  ent(840, 220, 240, 'Message', ['id  PK', 'conversation  FK', 'sender  FK → User', 'type, content', 'metadata  (JSON)', 'loanRequest  FK (opz.)'], 'ar');
+  ent(840, 480, 240, 'LoanRequest', ['id  PK', 'requester  FK → User', 'owner  FK → User', 'book  FK', 'conversation  FK', 'status, offeredPoints', 'lastOfferBy', 'requesterConfirmed', 'ownerConfirmed'], 'ar');
+  // relazioni
+  arrow(s, [[440, 80], [260, 80]], 'user_preferred_genre (N:M)', { at: [350, 72], both: true });
+  arrow(s, [[150, 300], [150, 137]], 'book_genre (N:M)', { at: [160, 222], anchor: 'start', both: true });
+  arrow(s, [[440, 370], [280, 370]], 'N : 1', { at: [360, 362] });
+  arrow(s, [[560, 300], [560, 233]], 'N : 1', { at: [570, 272], anchor: 'start' });
+  arrow(s, [[150, 560], [150, 475]], 'N : 1', { at: [160, 522], anchor: 'start' });
+  arrow(s, [[440, 600], [330, 600], [330, 440], [280, 440]], 'N : 1', { at: [340, 530], anchor: 'start' });
+  arrow(s, [[840, 90], [680, 90]], 'conversation_participant', { at: [760, 82], both: true });
+  arrow(s, [[960, 220], [960, 137]], 'N : 1', { at: [970, 184], anchor: 'start' });
+  arrow(s, [[960, 480], [960, 376]], '0..1 : N', { at: [970, 434], anchor: 'start', both: false });
+  arrow(s, [[840, 540], [760, 540], [760, 160], [680, 160]], 'richiedente e proprietario', { at: [750, 482], anchor: 'end' });
+  el('path', { d: 'M680,45 h40 v-30 h-80 v5', fill: 'none', stroke: C.line, 'stroke-width': 1.6, 'marker-end': 'url(#d-er-a)' }, s);
+  txt(s, 730, 28, 'user_following (N:M su sé stessa)', 'l');
+}
+
+/* ───────────── 3. Macchina a stati del prestito ───────────── */
+{
+  const s = svg('d-stati', 1120, 430);
+  el('circle', { cx: 50, cy: 150, r: 9, fill: C.gr }, s);
+  box(s, 150, 110, 190, 80, 'pending', ['offerta sul tavolo'], 'gi', { rx: 40 });
+  box(s, 480, 110, 190, 80, 'accepted', ['in attesa dello scambio'], 'blu', { rx: 40 });
+  box(s, 840, 110, 200, 80, 'completed', ['punti trasferiti'], 've', { rx: 40 });
+  box(s, 150, 310, 190, 80, 'declined', ['rimborso di 1 CP'], 'ar', { rx: 40 });
+  box(s, 480, 310, 190, 80, 'cancelled', ['rimborso di 1 CP'], 'ar', { rx: 40 });
+  arrow(s, [[59, 150], [150, 150]], ['nuova offerta', '−1 CP'], { at: [104, 122] });
+  arrow(s, [[340, 150], [480, 150]], 'accettazione', { at: [410, 142] });
+  arrow(s, [[670, 150], [840, 150]], ['doppia conferma', 'dello scambio'], { at: [755, 127] });
+  arrow(s, [[245, 190], [245, 310]], 'rifiuto', { at: [255, 255], anchor: 'start' });
+  arrow(s, [[575, 190], [575, 310]], 'annullamento', { at: [585, 255], anchor: 'start' });
+  el('path', { d: 'M205,110 C190,40 300,40 285,110', fill: 'none', stroke: C.line, 'stroke-width': 1.6, 'marker-end': 'url(#d-stati-a)' }, s);
+  txt(s, 245, 44, 'controproposta (cambia lastOfferBy)', 'l', 'middle');
+  el('path', { d: 'M535,110 C520,40 630,40 615,110', fill: 'none', stroke: C.line, 'stroke-width': 1.6, 'marker-end': 'url(#d-stati-a)' }, s);
+  txt(s, 575, 44, 'prima conferma (una sola parte)', 'l', 'middle');
+  el('circle', { cx: 1085, cy: 150, r: 10, fill: 'none', stroke: C.gr, 'stroke-width': 1.5 }, s);
+  el('circle', { cx: 1085, cy: 150, r: 5.5, fill: C.gr }, s);
+  arrow(s, [[1040, 150], [1074, 150]], null);
+}
+
+/* ───────────── 4. Sequenza di invio di un messaggio ───────────── */
+{
+  const s = svg('d-sequenza', 1120, 560);
+  const xs = [100, 330, 560, 790, 1010];
+  const nomi = ['Browser mittente', 'Symfony (php)', 'MariaDB', 'Hub Mercure', 'Browser destinatario'];
+  xs.forEach((x, i) => {
+    box(s, x - 98, 20, 196, 46, nomi[i], [], i === 3 ? 'ar' : (i === 2 ? 'gi' : (i === 1 ? 'blu' : 'gr')));
+    el('line', { x1: x, y1: 66, x2: x, y2: 540, stroke: C.gr, 'stroke-dasharray': '4 5', 'stroke-width': 1 }, s);
+  });
+  const msg = (y, a, b, label, opt = {}) => arrow(s, [[xs[a], y], [xs[b], y]], label, { at: [(xs[a] + xs[b]) / 2, y - 8], ...opt });
+  msg(120, 4, 3, '0. sottoscrizione EventSource al topic (JWT)', { dash: true, col: 'aa' });
+  msg(180, 0, 1, '1. POST /chat/{id}/send + token CSRF');
+  msg(235, 1, 2, '2. INSERT message');
+  msg(290, 2, 1, '3. conferma', { dash: true });
+  msg(345, 1, 3, '4. publish(topic, <turbo-stream>)', { col: 'aa' });
+  msg(400, 3, 4, '5. evento SSE', { col: 'aa' });
+  msg(400, 3, 0, null, { col: 'aa' });
+  txt(s, 445, 428, '5. evento SSE (anche al mittente)', 'l', 'middle');
+  msg(470, 1, 0, '6. 204 No Content', { dash: true });
+  txt(s, xs[4], 500, '7. Turbo aggiunge il', 'l', 'middle');
+  txt(s, xs[4], 516, 'messaggio al DOM', 'l', 'middle');
+  txt(s, xs[0], 500, '7. Turbo aggiunge il', 'l', 'middle');
+  txt(s, xs[0], 516, 'messaggio al DOM', 'l', 'middle');
+}
+
+/* ───────────── 5. Pipeline del feed ───────────── */
+{
+  const s = svg('d-feed', 1120, 400);
+  box(s, 20, 40, 190, 90, '1. Cronologia', ['SMEMBERS', 'user:{id}:seen_books'], 've');
+  box(s, 250, 40, 190, 90, '2. Selezione ID', ['SQL nativo: generi,', 'CRC32(id+seed), NOT IN'], 'blu');
+  box(s, 480, 40, 190, 90, '3. Idratazione', ['una query DQL con', 'JOIN su autore, generi, foto'], 'blu');
+  box(s, 710, 40, 190, 90, '4. Marcatura', ['SADD + EXPIRE', '30 giorni'], 've');
+  box(s, 910, 220, 190, 90, '6. Risposta', ['pagina HTML oppure', 'JSON { html, hasMore }'], 'gr');
+  box(s, 480, 220, 390, 90, '5. Caricamento in blocco', ['interazioni dell’utente · voto medio e like (cache 60 s)', 'utenti seguiti (cache 120 s) · recensioni dell’utente'], 'gi');
+  arrow(s, [[210, 85], [250, 85]]);
+  arrow(s, [[440, 85], [480, 85]]);
+  arrow(s, [[670, 85], [710, 85]]);
+  arrow(s, [[805, 130], [805, 175], [675, 175], [675, 220]]);
+  arrow(s, [[870, 265], [910, 265]]);
+  box(s, 20, 220, 420, 90, 'Cronologia esaurita?', ['se arrivano meno di 30 libri: DEL della chiave Redis', 'e nuova selezione per completare il blocco'], 'ar');
+  arrow(s, [[345, 130], [345, 220]], null, { dash: true, col: 'aa' });
+  arrow(s, [[230, 220], [230, 175], [115, 175], [115, 130]], null, { dash: true, col: 'aa' });
+  txt(s, 20, 360, 'Verde: Redis · Blu: MariaDB · Giallo: query aggregate · Arancio: ramo eseguito solo a cronologia esaurita', 'l');
+}
+
+/* ───────────── 6. Flusso della ricerca per ISBN ───────────── */
+{
+  const s = svg('d-isbn', 1120, 330);
+  box(s, 20, 110, 150, 80, 'ISBN digitato', ['normalizzazione', '(solo cifre e X)'], 'gr');
+  box(s, 210, 110, 160, 80, 'Catalogo locale', ['findByIsbn()'], 'gi');
+  box(s, 410, 110, 160, 80, 'Cache Redis', ['isbn_api_{isbn}', 'validità 24 ore'], 've');
+  box(s, 610, 110, 160, 80, 'Google Books', ['volumes?q=isbn:…'], 'blu');
+  box(s, 810, 110, 160, 80, 'Open Library', ['/isbn/{isbn}.json', '+ autore e opera'], 'blu');
+  box(s, 210, 240, 160, 60, 'Libro già presente', [], 'ar');
+  box(s, 610, 240, 360, 60, 'Form precompilato, completabile a mano', [], 've');
+  box(s, 990, 120, 110, 60, 'Non trovato', [], 'ar');
+  arrow(s, [[170, 150], [210, 150]]);
+  arrow(s, [[370, 150], [410, 150]], 'assente', { at: [390, 100] });
+  arrow(s, [[570, 150], [610, 150]], 'assente', { at: [590, 100] });
+  arrow(s, [[770, 150], [810, 150]], 'vuoto', { at: [790, 100] });
+  arrow(s, [[970, 150], [990, 150]]);
+  arrow(s, [[290, 190], [290, 240]], 'presente', { at: [300, 220], anchor: 'start' });
+  arrow(s, [[690, 190], [690, 240]], 'dati', { at: [700, 220], anchor: 'start', col: 'av' });
+  arrow(s, [[890, 190], [890, 240]], 'dati', { at: [900, 220], anchor: 'start', col: 'av' });
+  arrow(s, [[490, 190], [490, 270], [610, 270]], 'in cache', { at: [500, 220], anchor: 'start', col: 'av' });
+}
+</script>
+</body>
+</html>
