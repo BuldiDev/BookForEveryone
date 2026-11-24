@@ -15,7 +15,7 @@ from docx.shared import Cm, Pt, RGBColor
 ATENEO = "UNIVERSITÀ TELEMATICA PEGASO"
 CORSO = ["CORSO DI LAUREA IN", "INFORMATICA PER LE AZIENDE DIGITALI", "(CLASSE L-31)"]
 TITOLO = "BookForEveryone: sviluppo di una piattaforma social per il prestito geolocalizzato di libri fisici"
-RELATORE = ["Chiar.mo Prof.", "[Nome Cognome]"]
+RELATORE = ["Chiar.mo Prof.", "Claudio Tomazzoli"]
 CANDIDATO = ["Antonino Baldanza", "matricola n. 0312300739"]
 ANNO = "ANNO ACCADEMICO [2025/2026]"
 

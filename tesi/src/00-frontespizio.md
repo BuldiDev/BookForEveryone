@@ -26,7 +26,7 @@ Tema n. 4 «Sharing technologies» – Traccia n. 14: sviluppo di un software di
 
 ::: {custom-style="FrontNomi"}
 **Relatore**\
-[Nome e Cognome del relatore]
+Chiar.mo Prof. Claudio Tomazzoli
 
 **Candidato**\
 Antonino Baldanza\
